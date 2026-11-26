@@ -254,7 +254,124 @@ async function handleUserRegister(e) {
   }
 }
 
-function handleGoogleSignIn() {
+const defaultFirebaseConfig = {
+  apiKey: "AIzaSyDbmYlDvjIHtrHBovHq4pKmMY93tFrh4Xg",
+  authDomain: "ai-doubt-solver-9798f.firebaseapp.com",
+  projectId: "ai-doubt-solver-9798f",
+  storageBucket: "ai-doubt-solver-9798f.firebasestorage.app",
+  messagingSenderId: "465922307559",
+  appId: "1:465922307559:web:78830d128d1389646cb942",
+  measurementId: "G-Q36EW23QWS"
+};
+
+function getFirebaseAuth() {
+  try {
+    if (typeof firebase !== "undefined" && firebase.apps) {
+      if (!firebase.apps.length) {
+        firebase.initializeApp(defaultFirebaseConfig);
+      }
+      return firebase.auth();
+    }
+  } catch (e) { }
+  return null;
+}
+
+async function completeGoogleLogin(googleUser) {
+  const selectedRole = document.getElementById("regRole") ? document.getElementById("regRole").value : "student";
+  const userRole = (selectedRole === "teacher" || selectedRole === "admin") ? selectedRole : (googleUser.role || "student");
+  googleUser.role = userRole;
+
+  const localUser = {
+    id: "u-" + btoa(googleUser.email).replace(/=/g, "").slice(0, 8),
+    name: googleUser.name,
+    email: googleUser.email,
+    role: userRole,
+    grade: "12th Grade",
+    photo_url: googleUser.photo_url || ""
+  };
+  if (typeof state !== "undefined" && state) {
+    state.user = localUser;
+  } else if (typeof window !== "undefined" && window.state) {
+    window.state.user = localUser;
+  }
+  localStorage.setItem("user", JSON.stringify(localUser));
+
+  try {
+    const res = await fetch("/api/auth/google", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(googleUser)
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.user) {
+        if (typeof state !== "undefined" && state) {
+          state.user = data.user;
+        } else if (typeof window !== "undefined" && window.state) {
+          window.state.user = data.user;
+        }
+        localStorage.setItem("user", JSON.stringify(data.user));
+        if (data.token) localStorage.setItem("token", data.token);
+      }
+    }
+  } catch (err) { }
+
+  window.location.href = userRole === "teacher" ? "/teacher" : (userRole === "admin" ? "/admin" : "/");
+}
+
+async function handleGoogleSignIn() {
+  const btn = document.getElementById("btnGoogleSignIn");
+  const origHtml = btn ? btn.innerHTML : "";
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = "<span>Connecting to Firebase Google...</span>";
+  }
+
+  const auth = getFirebaseAuth();
+  if (auth) {
+    try {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      provider.addScope("profile");
+      provider.addScope("email");
+      provider.setCustomParameters({ prompt: "select_account" });
+
+      const result = await auth.signInWithPopup(provider);
+      if (result && result.user) {
+        const u = result.user;
+        const googleUser = {
+          email: u.email,
+          name: u.displayName || u.email.split("@")[0],
+          photo_url: u.photoURL || ("https:/" + "/lh3.googleusercontent.com/a/default-user"),
+          firebase_uid: u.uid
+        };
+        await completeGoogleLogin(googleUser);
+        return;
+      }
+    } catch (popupErr) {
+      if (popupErr.code === "auth/popup-closed-by-user" || popupErr.code === "auth/cancelled-popup-request") {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origHtml;
+        }
+        return;
+      }
+      if (popupErr.code === "auth/popup-blocked") {
+        try {
+          const provider = new firebase.auth.GoogleAuthProvider();
+          provider.addScope("profile");
+          provider.addScope("email");
+          provider.setCustomParameters({ prompt: "select_account" });
+          await auth.signInWithRedirect(provider);
+          return;
+        } catch (redirErr) { }
+      }
+    }
+  }
+
+  if (btn) {
+    btn.disabled = false;
+    btn.innerHTML = origHtml;
+  }
   const emailInput = document.getElementById("loginEmail");
   const modalInput = document.getElementById("googleAccountEmail");
   if (modalInput) {
@@ -278,7 +395,6 @@ async function handleGoogleModalSubmit(e) {
   }
 
   const btn = document.getElementById("btnGoogleModalSubmit");
-  const origText = btn ? btn.textContent : "";
   if (btn) {
     btn.disabled = true;
     btn.textContent = "Signing in...";
@@ -288,47 +404,16 @@ async function handleGoogleModalSubmit(e) {
   const selectedRole = document.getElementById("regRole") ? document.getElementById("regRole").value : "student";
   const userRole = (selectedRole === "teacher" || selectedRole === "admin") ? selectedRole : "student";
 
-  const studentUser = {
-    id: "u-" + btoa(email).replace(/=/g, "").slice(0, 8),
-    name: name,
+  const googleUser = {
     email: email,
+    name: name,
+    photo_url: "https:/" + "/lh3.googleusercontent.com/a/default-user",
     role: userRole,
-    grade: "12th Grade"
+    firebase_uid: "firebase-" + btoa(email).replace(/=/g, "").slice(0, 12)
   };
-  if (typeof state !== "undefined" && state) {
-    state.user = studentUser;
-  } else if (typeof window !== "undefined" && window.state) {
-    window.state.user = studentUser;
-  }
-  localStorage.setItem("user", JSON.stringify(studentUser));
-
-  try {
-    const res = await fetch("/api/auth/google", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: email,
-        name: name,
-        photo_url: "https:/" + "/lh3.googleusercontent.com/a/default-user",
-        role: userRole
-      })
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.user) {
-        if (typeof state !== "undefined" && state) {
-          state.user = data.user;
-        } else if (typeof window !== "undefined" && window.state) {
-          window.state.user = data.user;
-        }
-        localStorage.setItem("user", JSON.stringify(data.user));
-        if (data.token) localStorage.setItem("token", data.token);
-      }
-    }
-  } catch (err) { }
 
   closeModal("googleAuthModal");
-  window.location.href = userRole === "teacher" ? "/teacher" : (userRole === "admin" ? "/admin" : "/");
+  await completeGoogleLogin(googleUser);
 }
 
 window.switchRole = switchRole;
