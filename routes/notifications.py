@@ -22,12 +22,15 @@ def get_notif_query(user_id, role):
 
 @notifications_bp.route("/api/notifications", methods=["GET"])
 def get_notifications():
-    user_id = request.args.get("user_id")
-    role = request.args.get("role")
-    query = get_notif_query(user_id, role)
-    docs = list(notifications_col.find(query).sort("timestamp", -1).limit(30))
-    result = clean_doc(docs)
-    return jsonify(result if result is not None else [])
+    try:
+        user_id = request.args.get("user_id")
+        role = request.args.get("role")
+        query = get_notif_query(user_id, role)
+        docs = list(notifications_col.find(query).sort("timestamp", -1).limit(30))
+        result = clean_doc(docs)
+        return jsonify(result if result is not None else [])
+    except Exception:
+        return jsonify([])
 
 @notifications_bp.route("/api/notifications/stream", methods=["GET"])
 def stream_notifications():

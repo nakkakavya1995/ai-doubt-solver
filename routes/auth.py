@@ -20,11 +20,37 @@ def auth_google():
     if not email:
         return jsonify({"error": "Google email is required"}), 400
 
-    user = users_col.find_one({"$or": [{"email": email}, {"name": data.get("email", "").strip()}]})
-    if not user:
-        user_id = f"u-{uuid.uuid4().hex[:8]}"
+    try:
+        user = users_col.find_one({"$or": [{"email": email}, {"name": data.get("email", "").strip()}]})
+        if not user:
+            user_id = f"u-{uuid.uuid4().hex[:8]}"
+            user = {
+                "id": user_id,
+                "name": name,
+                "email": email,
+                "role": role,
+                "photo_url": photo_url,
+                "firebase_uid": firebase_uid,
+                "auth_provider": "google",
+                "subject": None,
+                "grade": "General" if role == "student" else None,
+                "created_at": datetime.utcnow().isoformat() + "Z"
+            }
+            users_col.insert_one(user)
+        else:
+            update_fields = {}
+            if photo_url and not user.get("photo_url"):
+                update_fields["photo_url"] = photo_url
+            if firebase_uid and not user.get("firebase_uid"):
+                update_fields["firebase_uid"] = firebase_uid
+            if not user.get("auth_provider"):
+                update_fields["auth_provider"] = "google"
+            if update_fields:
+                users_col.update_one({"_id": user["_id"]}, {"$set": update_fields})
+                user.update(update_fields)
+    except Exception:
         user = {
-            "id": user_id,
+            "id": f"u-{uuid.uuid4().hex[:8]}",
             "name": name,
             "email": email,
             "role": role,
@@ -35,18 +61,6 @@ def auth_google():
             "grade": "General" if role == "student" else None,
             "created_at": datetime.utcnow().isoformat() + "Z"
         }
-        users_col.insert_one(user)
-    else:
-        update_fields = {}
-        if photo_url and not user.get("photo_url"):
-            update_fields["photo_url"] = photo_url
-        if firebase_uid and not user.get("firebase_uid"):
-            update_fields["firebase_uid"] = firebase_uid
-        if not user.get("auth_provider"):
-            update_fields["auth_provider"] = "google"
-        if update_fields:
-            users_col.update_one({"_id": user["_id"]}, {"$set": update_fields})
-            user.update(update_fields)
 
     clean_user = clean_doc(user)
     clean_user.pop("password", None)

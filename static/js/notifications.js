@@ -263,6 +263,7 @@ async function loadNotifications() {
   try {
     if (!state.user) return;
     const res = await fetch(`/api/notifications?user_id=${encodeURIComponent(state.user.id)}&role=${encodeURIComponent(state.user.role || "")}`);
+    if (!res.ok) return;
     const rawNotifs = await res.json();
     const notifs = Array.isArray(rawNotifs) ? rawNotifs : [];
     const dot = document.getElementById("notifDot");
