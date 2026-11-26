@@ -49,17 +49,20 @@ def stream_notifications():
                 if not doc.get("read", False):
                     yield f"event: notification\ndata: {json.dumps(clean_doc(doc))}\n\n"
 
-        for _ in range(40):
-            time.sleep(1.2)
-            recent = list(notifications_col.find({
-                **query,
-                "timestamp": {"$gte": start_time}
-            }).sort("timestamp", -1).limit(5))
-            for doc in recent:
-                nid = doc.get("id")
-                if nid and nid not in seen_ids:
-                    seen_ids.add(nid)
-                    yield f"event: notification\ndata: {json.dumps(clean_doc(doc))}\n\n"
+        for _ in range(3):
+            time.sleep(1.0)
+            try:
+                recent = list(notifications_col.find({
+                    **query,
+                    "timestamp": {"$gte": start_time}
+                }).sort("timestamp", -1).limit(5))
+                for doc in recent:
+                    nid = doc.get("id")
+                    if nid and nid not in seen_ids:
+                        seen_ids.add(nid)
+                        yield f"event: notification\ndata: {json.dumps(clean_doc(doc))}\n\n"
+            except Exception:
+                pass
             yield ": ping\n\n"
 
     resp = Response(event_generator(), mimetype="text/event-stream")

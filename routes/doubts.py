@@ -33,8 +33,11 @@ def get_doubts():
     if bookmarked == "true":
         query["bookmarked"] = True
 
-    docs = list(doubts_col.find(query).sort("created_at", -1))
-    cleaned = clean_doc(docs)
+    try:
+        docs = list(doubts_col.find(query).sort("created_at", -1))
+        cleaned = clean_doc(docs)
+    except Exception:
+        cleaned = []
 
     if search:
         cleaned = [

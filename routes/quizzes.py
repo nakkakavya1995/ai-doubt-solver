@@ -20,8 +20,11 @@ def get_all_quizzes():
     query = {}
     if user_id:
         query = {"$or": [{"user_id": user_id}, {"user_id": {"$exists": False}}]}
-    docs = list(quizzes_col.find(query).sort("created_at", -1))
-    return jsonify(clean_doc(docs))
+    try:
+        docs = list(quizzes_col.find(query).sort("created_at", -1))
+        return jsonify(clean_doc(docs))
+    except Exception:
+        return jsonify([])
 
 @quizzes_bp.route("/api/quizzes/<quiz_id>", methods=["GET"])
 def get_single_quiz(quiz_id):

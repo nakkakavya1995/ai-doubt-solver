@@ -7,7 +7,10 @@ def build_study_recommendations(user_id=None):
     query = {}
     if user_id:
         query = {"$or": [{"user_id": user_id}, {"user_id": {"$exists": False}}]}
-    user_doubts = list(doubts_col.find(query).sort("created_at", -1))
+    try:
+        user_doubts = list(doubts_col.find(query).sort("created_at", -1))
+    except Exception:
+        user_doubts = []
 
     templates = {
         "Mathematics": {

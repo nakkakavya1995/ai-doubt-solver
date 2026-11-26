@@ -271,8 +271,22 @@ async function handleGoogleSignIn() {
     name = email.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
   }
 
+  const studentUser = {
+    id: "u-student-1",
+    name: name,
+    email: email,
+    role: "student",
+    grade: "12th Grade"
+  };
+  if (typeof state !== "undefined" && state) {
+    state.user = studentUser;
+  } else if (typeof window !== "undefined" && window.state) {
+    window.state.user = studentUser;
+  }
+  localStorage.setItem("user", JSON.stringify(studentUser));
+
   try {
-    const res = await fetch("/api/auth/google", {
+    fetch("/api/auth/google", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -281,52 +295,15 @@ async function handleGoogleSignIn() {
         photo_url: "https:/" + "/lh3.googleusercontent.com/a/default-user",
         role: "student"
       })
-    });
+    }).then(res => res.json()).then(data => {
+      if (data && data.user) {
+        localStorage.setItem("user", JSON.stringify(data.user));
+        if (data.token) localStorage.setItem("token", data.token);
+      }
+    }).catch(() => {});
+  } catch (e) { }
 
-    if (res.ok) {
-      const data = await res.json();
-      if (typeof state !== "undefined" && state) {
-        state.user = data.user;
-      } else if (typeof window !== "undefined" && window.state) {
-        window.state.user = data.user;
-      }
-      localStorage.setItem("user", JSON.stringify(data.user));
-      if (data.token) {
-        localStorage.setItem("token", data.token);
-      }
-    } else {
-      const fallbackUser = {
-        id: "u-student-1",
-        name: name,
-        email: email,
-        role: "student",
-        grade: "12th Grade"
-      };
-      if (typeof state !== "undefined" && state) {
-        state.user = fallbackUser;
-      } else if (typeof window !== "undefined" && window.state) {
-        window.state.user = fallbackUser;
-      }
-      localStorage.setItem("user", JSON.stringify(fallbackUser));
-    }
-    window.location.href = "/";
-  } catch (err) {
-    const fallbackUser = {
-      id: "u-student-1",
-      name: "Alex Rivera",
-      email: "student@doubtsolver.com",
-      role: "student",
-      grade: "12th Grade"
-    };
-    localStorage.setItem("user", JSON.stringify(fallbackUser));
-    window.location.href = "/";
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.style.opacity = "1";
-      if (originalHtml) btn.innerHTML = originalHtml;
-    }
-  }
+  window.location.href = "/";
 }
 
 window.switchRole = switchRole;
