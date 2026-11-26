@@ -254,28 +254,45 @@ async function handleUserRegister(e) {
   }
 }
 
-async function handleGoogleSignIn() {
-  const btn = document.getElementById("btnGoogleSignIn");
-  const originalHtml = btn ? btn.innerHTML : "";
+function handleGoogleSignIn() {
+  const emailInput = document.getElementById("loginEmail");
+  const modalInput = document.getElementById("googleAccountEmail");
+  if (modalInput) {
+    if (emailInput && emailInput.value && emailInput.value.includes("@")) {
+      modalInput.value = emailInput.value.trim();
+    } else {
+      modalInput.value = "";
+    }
+  }
+  openModal("googleAuthModal");
+  if (modalInput) setTimeout(() => modalInput.focus(), 150);
+}
+
+async function handleGoogleModalSubmit(e) {
+  if (e) e.preventDefault();
+  const input = document.getElementById("googleAccountEmail");
+  const email = input ? input.value.trim().toLowerCase() : "";
+  if (!email || !email.includes("@")) {
+    alert("Please enter a valid Google mail id");
+    return;
+  }
+
+  const btn = document.getElementById("btnGoogleModalSubmit");
+  const origText = btn ? btn.textContent : "";
   if (btn) {
     btn.disabled = true;
-    btn.style.opacity = "0.75";
-    btn.innerHTML = "<span>Signing in to Dashboard...</span>";
+    btn.textContent = "Signing in...";
   }
 
-  let email = "student@doubtsolver.com";
-  let name = "Alex Rivera";
-  const emailInput = document.getElementById("loginEmail");
-  if (emailInput && emailInput.value && emailInput.value.includes("@")) {
-    email = emailInput.value.trim().toLowerCase();
-    name = email.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-  }
+  const name = email.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  const selectedRole = document.getElementById("regRole") ? document.getElementById("regRole").value : "student";
+  const userRole = (selectedRole === "teacher" || selectedRole === "admin") ? selectedRole : "student";
 
   const studentUser = {
-    id: "u-student-1",
+    id: "u-" + btoa(email).replace(/=/g, "").slice(0, 8),
     name: name,
     email: email,
-    role: "student",
+    role: userRole,
     grade: "12th Grade"
   };
   if (typeof state !== "undefined" && state) {
@@ -286,24 +303,32 @@ async function handleGoogleSignIn() {
   localStorage.setItem("user", JSON.stringify(studentUser));
 
   try {
-    fetch("/api/auth/google", {
+    const res = await fetch("/api/auth/google", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email: email,
         name: name,
         photo_url: "https:/" + "/lh3.googleusercontent.com/a/default-user",
-        role: "student"
+        role: userRole
       })
-    }).then(res => res.json()).then(data => {
+    });
+    if (res.ok) {
+      const data = await res.json();
       if (data && data.user) {
+        if (typeof state !== "undefined" && state) {
+          state.user = data.user;
+        } else if (typeof window !== "undefined" && window.state) {
+          window.state.user = data.user;
+        }
         localStorage.setItem("user", JSON.stringify(data.user));
         if (data.token) localStorage.setItem("token", data.token);
       }
-    }).catch(() => {});
-  } catch (e) { }
+    }
+  } catch (err) { }
 
-  window.location.href = "/";
+  closeModal("googleAuthModal");
+  window.location.href = userRole === "teacher" ? "/teacher" : (userRole === "admin" ? "/admin" : "/");
 }
 
 window.switchRole = switchRole;
@@ -316,3 +341,4 @@ window.fillCredentials = fillCredentials;
 window.showAuthTab = showAuthTab;
 window.handleUserRegister = handleUserRegister;
 window.handleGoogleSignIn = handleGoogleSignIn;
+window.handleGoogleModalSubmit = handleGoogleModalSubmit;
