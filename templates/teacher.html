@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teacher Dashboard - AI Doubt Solver</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css">
+  <link rel="stylesheet" href="/static/css/style.css?v=9">
+  <link rel="stylesheet" href="/static/css/teacher.css?v=9">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.4/dist/confetti.browser.min.js"></script>
+</head>
+<body class="page-teacher">
+  <header class="app-header">
+    <div class="header-left">
+      <button id="btnSidebarToggle" class="btn-icon hidden" title="Toggle Navigation" onclick="toggleSidebar()">☰</button>
+      <a href="/" class="logo-brand">
+        <div class="logo-icon">✦</div>
+        <span>AI <span class="text-brand">Doubt Solver</span></span>
+      </a>
+    </div>
+
+    <div class="header-center">
+      <div id="teacherHeaderNavGroup" class="teacher-nav-group">
+        <button id="tabBtnTeacherMonitor" type="button" class="btn btn-primary teacher-nav-btn" onclick="showTeacherDashboardTab('monitor')">
+          <span>Monitor Student Doubts</span>
+        </button>
+        <button id="tabBtnTeacherActivity" type="button" class="btn btn-outline teacher-nav-btn" onclick="showTeacherDashboardTab('activity')">
+          <span>Review Learning Activity</span>
+        </button>
+        <button id="tabBtnTeacherExplain" type="button" class="btn btn-outline teacher-nav-btn" onclick="showTeacherDashboardTab('explain')">
+          <span>Provide Explanations</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <button id="btnSettingsModal" class="btn-icon hidden" onclick="openModal('settingsModal')" title="System Configuration">⚙</button>
+      <button id="btnThemeToggle" class="btn-icon" onclick="toggleTheme()" title="Switch Light/Dark Mode">☾</button>
+      <button class="btn-icon" onclick="toggleNotifications()" title="Notifications">
+        🔔
+        <span id="notifDot" class="badge-dot hidden"></span>
+      </button>
+
+      <a href="/login" class="user-profile-badge" title="Profile Details">
+        <div id="userAvatar" class="user-avatar">T</div>
+        <div class="user-info-text">
+          <div id="userNameHeader" class="user-name-label">Teacher</div>
+          <div id="userRoleHeader" class="user-role-label">Educator</div>
+        </div>
+      </a>
+      <button class="btn-icon" onclick="handleLogout()" title="Sign Out">↪</button>
+    </div>
+  </header>
+
+  <div class="app-body">
+    <aside id="appSidebar" class="app-sidebar">
+      <div>
+        <div id="teacherNavGroup" class="sidebar-nav-group">
+          <div class="sidebar-title text-green">Educator Portal</div>
+          <a href="/teacher" class="sidebar-link active">
+            <span>Teacher Dashboard</span>
+          </a>
+        </div>
+      </div>
+    </aside>
+
+    <main class="app-main">
+      <div class="mb-xl">
+        <h1 class="teacher-title">
+          <span>Teacher Dashboard</span>
+        </h1>
+        <p class="teacher-subtitle">
+          Monitor student doubts, review learning activity, and provide additional explanations.
+        </p>
+      </div>
+
+      <div id="teacherMonitorTab">
+        <div class="card-panel teacher-card-padded">
+          <div class="teacher-filter-bar">
+            <div>
+              <h2 class="teacher-section-title">
+                Live Student Doubts Monitor
+              </h2>
+              <p class="teacher-section-desc">
+                Track all incoming academic doubts, filter by curriculum subject, and oversee resolution status.
+              </p>
+            </div>
+            <div class="teacher-filter-group">
+              <input type="text" id="teacherSearchDoubtInput" class="form-input teacher-search-input" placeholder="Search student or doubt..." oninput="filterTeacherDoubts()">
+              <select id="teacherMonitorSubject" class="form-input teacher-subject-select" onchange="loadTeacherDoubtsMonitor()">
+                <option value="All">All Subjects</option>
+                <option value="Mathematics">Mathematics</option>
+                <option value="Physics">Physics</option>
+                <option value="Chemistry">Chemistry</option>
+                <option value="Computer Science">Computer Science</option>
+                <option value="English">English</option>
+                <option value="Biology">Biology</option>
+              </select>
+              <select id="teacherMonitorStatus" class="form-input teacher-subject-select" onchange="loadTeacherDoubtsMonitor()">
+                <option value="All">All Status</option>
+                <option value="pending">Pending Review</option>
+                <option value="verified">Verified by Faculty</option>
+                <option value="flagged">Needs Clarification</option>
+              </select>
+              <button type="button" class="btn btn-outline teacher-btn-reset" onclick="resetTeacherFilters()">Reset</button>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table teacher-table-full">
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Doubt Inquiry</th>
+                  <th>Subject</th>
+                  <th>Submitted</th>
+                  <th>Status</th>
+                  <th class="text-right">Teacher Actions</th>
+                </tr>
+              </thead>
+              <tbody id="teacherMonitorTableBody">
+                <tr>
+                  <td colspan="6" class="teacher-table-empty">
+                    Loading student inquiries...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="teacherActivityTab" class="teacher-tab-content hidden">
+        <div class="stats-grid mb-xl">
+          <div class="stat-card">
+            <div class="stat-header">
+              <span>Total Student Doubts</span>
+            </div>
+            <div id="actStatTotalDoubts" class="stat-value">0</div>
+            <div class="stat-desc">Inquiries logged across curriculum</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-header">
+              <span>Faculty Verified</span>
+            </div>
+            <div id="actStatVerified" class="stat-value teacher-stat-verified">0</div>
+            <div class="stat-desc">Approved and reviewed by teachers</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-header">
+              <span>Pending Review</span>
+            </div>
+            <div id="actStatPending" class="stat-value teacher-stat-pending">0</div>
+            <div class="stat-desc">Awaiting teacher verification</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-header">
+              <span>Needs Clarification</span>
+            </div>
+            <div id="actStatFlagged" class="stat-value teacher-stat-flagged">0</div>
+            <div class="stat-desc">Questions requiring attention</div>
+          </div>
+        </div>
+
+        <div class="teacher-act-grid">
+          <div class="card-panel teacher-card-padded">
+            <div class="teacher-card-divider">
+              <h2 class="teacher-section-title">
+                Live Learning Activity Stream
+              </h2>
+              <p class="teacher-section-desc">
+                Real-time activity feed of doubts submitted by students.
+              </p>
+            </div>
+            <div id="teacherActivityStreamList" class="teacher-stream-list">
+              <div class="teacher-table-empty">
+                Loading live activities...
+              </div>
+            </div>
+          </div>
+
+          <div class="card-panel teacher-card-padded">
+            <div class="teacher-card-divider">
+              <h2 class="teacher-section-title">
+                Curriculum Subject Breakdown
+              </h2>
+              <p class="teacher-section-desc">
+                Subject distribution across all doubts.
+              </p>
+            </div>
+            <div id="teacherSubjectBreakdownList" class="teacher-stream-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="teacherExplainTab" class="teacher-tab-content hidden">
+        <div class="card-panel teacher-card-padded">
+          <div class="teacher-card-divider">
+            <h2 class="teacher-section-title">
+              Provide Additional Explanations
+            </h2>
+            <p class="teacher-section-desc">
+              Select any student question below to provide your official teacher annotations.
+            </p>
+          </div>
+
+          <div class="teacher-explain-grid">
+            <div class="form-group mb-0">
+              <label class="form-label teacher-select-label">Select Doubt from Student Questions</label>
+              <select id="selectDoubtForTeacherExplanation" class="form-control teacher-select-input" onchange="handleSelectDoubtForExplanation()">
+                <option value="">-- Choose a student doubt to provide explanation --</option>
+              </select>
+            </div>
+
+            <div id="teacherExplainDoubtPreview" class="teacher-preview-card hidden">
+              <div class="teacher-preview-top">
+                <div class="flex-row gap-sm">
+                  <span id="previewDoubtSubject" class="badge badge-subject"></span>
+                  <span id="previewDoubtStudent" class="text-muted font-bold"></span>
+                </div>
+                <span id="previewDoubtStatus" class="badge badge-pending"></span>
+              </div>
+
+              <h3 id="previewDoubtTitle" class="teacher-preview-title"></h3>
+
+              <div class="teacher-preview-section-label">Student Question Statement:</div>
+              <div id="previewDoubtQuestion" class="teacher-preview-question-text"></div>
+
+              <div class="teacher-preview-section-label">AI Solution Summary:</div>
+              <div id="previewDoubtAiSolution" class="teacher-preview-solution-text"></div>
+            </div>
+
+            <form onsubmit="handlePostTeacherExplanation(event)">
+              <div class="mb-lg">
+                <label class="form-label font-bold">Instructor Additional Explanation / Annotation</label>
+                <textarea id="teacherAdditionalExplanationText" class="form-control teacher-textarea" rows="6" placeholder="Type your step-by-step teacher explanation, formulas, alternative derivations, or correction notes..." required></textarea>
+              </div>
+
+              <div class="flex-between flex-wrap gap-lg">
+                <label class="teacher-check-label">
+                  <input type="checkbox" id="checkMarkVerified" class="teacher-check-input" checked>
+                  <span>Mark solution as Verified by Faculty & Notify Student</span>
+                </label>
+
+                <button id="btnSubmitTeacherExplanation" type="submit" class="btn btn-primary teacher-btn-publish">
+                  <span>Submit Teacher Explanation</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div id="teacherInspectModal" class="modal-backdrop">
+        <div class="modal-card teacher-modal-dialog">
+          <div class="teacher-modal-top">
+            <div>
+              <div id="modalInspectSubject" class="badge badge-subject mb-xs"></div>
+              <h2 id="modalInspectTitle" class="teacher-modal-title"></h2>
+              <div id="modalInspectStudent" class="teacher-modal-student"></div>
+            </div>
+            <button type="button" class="btn btn-outline teacher-modal-close-btn" onclick="closeModal('teacherInspectModal')">&times;</button>
+          </div>
+
+          <div class="flex-col gap-lg mb-lg">
+            <div>
+              <div class="font-bold text-muted mb-xs">Student Question Statement:</div>
+              <div id="modalInspectQuestion" class="teacher-modal-box"></div>
+            </div>
+
+            <div>
+              <div class="font-bold text-muted mb-xs">AI-Generated Solution Summary:</div>
+              <div id="modalInspectSolution" class="teacher-modal-sol-box"></div>
+            </div>
+
+            <div id="modalExistingTeacherNoteBox" class="teacher-verified-box hidden">
+              <div class="teacher-verified-label">Current Teacher Explanation:</div>
+              <div id="modalExistingTeacherNote" class="teacher-verified-note"></div>
+            </div>
+          </div>
+
+          <div class="teacher-modal-actions">
+            <button id="btnModalGoExplain" type="button" class="btn btn-primary teacher-btn-action">
+              <span>Provide / Edit Explanation</span>
+            </button>
+            <button type="button" class="btn btn-outline teacher-btn-cancel" onclick="closeModal('teacherInspectModal')">Close</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="settingsModal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="flex-between mb-lg">
+        <div class="modal-title flex-row gap-sm">
+          <span class="text-brand">✦</span>
+          <span>AI Engine Configuration</span>
+        </div>
+        <button class="btn-icon" onclick="closeModal('settingsModal')">✕</button>
+      </div>
+      <form onsubmit="handleQuickSaveSettings(event)">
+        <div class="form-group">
+          <label class="form-label">API Key</label>
+          <input type="password" id="modalGrokKey" class="form-control font-mono" placeholder="gsk_... or xai-...">
+          <div class="form-hint text-muted">
+            Enter your API key to connect live reasoning models directly.
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Model Selection</label>
+          <select id="modalGrokModel" class="form-control">
+            <option value="openai/gpt-oss-120b">openai/gpt-oss-120b (High Reasoning Speed)</option>
+            <option value="qwen/qwen3.8-27b">qwen/qwen3.8-27b (Mathematical Logic)</option>
+            <option value="openai/gpt-oss-20b">openai/gpt-oss-20b (Fast Response)</option>
+            <option value="grok-2-latest">grok-2-latest (xAI Grok)</option>
+          </select>
+        </div>
+        <div class="flex-end gap-md">
+          <button type="button" class="btn btn-outline" onclick="closeModal('settingsModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Settings</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <div id="notifDrawer" class="notif-drawer-box">
+    <div class="notif-header-row">
+      <div class="panel-title">Notifications</div>
+      <div class="flex-row gap-sm">
+        <button id="btnEnableDesktopNotif" class="btn btn-outline btn-sm" onclick="testDesktopNotification()" title="Enable or Test Desktop Alerts">Desktop Alerts</button>
+        <button class="btn btn-outline btn-sm" onclick="clearAllNotifications()">Clear All</button>
+      </div>
+    </div>
+    <div id="desktopNotifBanner" class="desktop-notif-banner" onclick="testDesktopNotification()">
+      <span id="desktopNotifBannerText">🔔 Click to enable real-time desktop alerts</span>
+    </div>
+    <div id="notifListContainer" class="notif-list-container"></div>
+  </div>
+
+  <script src="/static/js/main.js?v=24"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      initTeacherDashboard();
+    });
+  </script>
+</body>
+</html>

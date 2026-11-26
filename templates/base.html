@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}AI Doubt Solver{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css">
+  <link rel="stylesheet" href="/static/css/style.css?v=9">
+  {% block extra_css %}{% endblock %}
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.4/dist/confetti.browser.min.js"></script>
+</head>
+
+<body class="{% block body_class %}{% endblock %}">
+  <header class="app-header">
+    <div class="header-left">
+      <button id="btnSidebarToggle" class="btn-icon hidden" title="Toggle Navigation"
+        onclick="toggleSidebar()">☰</button>
+      <a href="/" class="logo-brand">
+        <div class="logo-icon">✦</div>
+        <span>AI <span class="text-brand">Doubt Solver</span></span>
+      </a>
+    </div>
+
+    <div class="header-center">
+      {% block header_nav %}{% endblock %}
+    </div>
+
+    <div class="header-right">
+      {% if not request.path.startswith('/admin') %}
+      <button id="btnSettingsModal" class="btn-icon hidden" onclick="openModal('settingsModal')"
+        title="System Configuration">⚙</button>
+      {% endif %}
+      <button id="btnThemeToggle" class="btn-icon" onclick="toggleTheme()" title="Switch Light/Dark Mode">☾</button>
+      <button class="btn-icon" onclick="toggleNotifications()" title="Notifications">
+        🔔
+        <span id="notifDot" class="badge-dot hidden"></span>
+      </button>
+
+      <a href="/login" class="user-profile-badge" title="Profile Details">
+        <div id="userAvatar" class="user-avatar">A</div>
+        <div class="user-info-text">
+          <div id="userNameHeader" class="user-name-label">Student</div>
+          <div id="userRoleHeader" class="user-role-label">Student</div>
+        </div>
+      </a>
+      <button class="btn-icon" onclick="handleLogout()" title="Sign Out">↪</button>
+    </div>
+  </header>
+
+  <div class="app-body">
+    <aside id="appSidebar" class="app-sidebar">
+      <div>
+        {% if request.path.startswith('/admin') %}
+        <div id="adminNavGroup" class="sidebar-nav-group">
+          <div class="sidebar-title text-purple">Administration</div>
+          <a href="/admin" class="sidebar-link mb-xs" id="adminSidebarDashboardLink"
+            onclick="showAdminTab('users'); return false;">
+            <span>Admin Dashboard</span>
+          </a>
+          <button id="adminSidebarTabUsers" type="button" class="sidebar-link active" onclick="showAdminTab('users')">
+            <span>All Users</span>
+          </button>
+          <button id="adminSidebarTabTeachers" type="button" class="sidebar-link" onclick="showAdminTab('teachers')">
+            <span>Teacher Management</span>
+          </button>
+          <button id="adminSidebarTabSubjects" type="button" class="sidebar-link" onclick="showAdminTab('subjects')">
+            <span>Subjects</span>
+          </button>
+          <button id="adminSidebarTabActivity" type="button" class="sidebar-link" onclick="showAdminTab('activity')">
+            <span>Activity</span>
+          </button>
+          <button id="adminSidebarTabFeedback" type="button" class="sidebar-link" onclick="showAdminTab('feedback')">
+            <span>Feedback</span>
+          </button>
+        </div>
+        {% elif request.path.startswith('/teacher') %}
+        <div id="teacherNavGroup" class="sidebar-nav-group">
+          <div class="sidebar-title text-green">Educator Portal</div>
+          <a href="/teacher" class="sidebar-link active">
+            <span>Teacher Dashboard</span>
+          </a>
+        </div>
+        {% else %}
+        <div id="studentNavGroup" class="sidebar-nav-group">
+          <div class="sidebar-title">Learning Center</div>
+          <a id="navItemDashboard" href="/" class="sidebar-link {% block nav_dashboard %}{% endblock %}">
+            <span>⊞</span>
+            <span>Dashboard</span>
+          </a>
+          <a id="navItemAskDoubt" href="/ask" class="sidebar-link highlight {% block nav_ask %}{% endblock %}">
+            <span>＋</span>
+            <span>Ask AI Doubt</span>
+          </a>
+          <a id="navItemHistory" href="/history" class="sidebar-link {% block nav_history %}{% endblock %}">
+            <span>◷</span>
+            <span>Doubt History</span>
+          </a>
+          <a id="navItemBookmarks" href="/bookmarks" class="sidebar-link {% block nav_bookmarks %}{% endblock %}">
+            <span>★</span>
+            <span>Bookmarks</span>
+          </a>
+          <a id="navItemQuiz" href="/quiz" class="sidebar-link {% block nav_quiz %}{% endblock %}">
+            <span>✓</span>
+            <span>Practice & Quizzes</span>
+          </a>
+          <a id="navItemRecommendations" href="/recommendations"
+            class="sidebar-link {% block nav_recommendations %}{% endblock %}">
+            <span>◎</span>
+            <span>AI Study Path</span>
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </aside>
+
+    <main class="app-main">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  {% if not request.path.startswith('/admin') %}
+  <div id="settingsModal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="flex-between mb-lg">
+        <div class="modal-title flex-row gap-sm">
+          <span class="text-brand">✦</span>
+          <span>AI Engine Configuration</span>
+        </div>
+        <button class="btn-icon" onclick="closeModal('settingsModal')">✕</button>
+      </div>
+      <form onsubmit="handleQuickSaveSettings(event)">
+        <div class="form-group">
+          <label class="form-label">API Key</label>
+          <input type="password" id="modalGrokKey" class="form-control font-mono" placeholder="gsk_... or xai-...">
+          <div class="form-hint text-muted">
+            Enter your API key to connect live reasoning models directly.
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Model Selection</label>
+          <select id="modalGrokModel" class="form-control">
+            <option value="openai/gpt-oss-120b">openai/gpt-oss-120b (High Reasoning Speed)</option>
+            <option value="qwen/qwen3.8-27b">qwen/qwen3.8-27b (Mathematical Logic)</option>
+            <option value="openai/gpt-oss-20b">openai/gpt-oss-20b (Fast Response)</option>
+            <option value="grok-2-latest">grok-2-latest (xAI Grok)</option>
+          </select>
+        </div>
+        <div class="flex-end gap-md">
+          <button type="button" class="btn btn-outline" onclick="closeModal('settingsModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Settings</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <div id="notifDrawer" class="notif-drawer-box">
+    <div class="notif-header-row">
+      <div class="panel-title">Notifications</div>
+      <div class="flex-row gap-sm">
+        <button id="btnEnableDesktopNotif" class="btn btn-outline btn-sm" onclick="testDesktopNotification()"
+          title="Enable or Test Desktop Alerts">Desktop Alerts</button>
+        <button class="btn btn-outline btn-sm" onclick="clearAllNotifications()">Clear All</button>
+      </div>
+    </div>
+    <div id="desktopNotifBanner" class="desktop-notif-banner" onclick="testDesktopNotification()">
+      <span id="desktopNotifBannerText">🔔 Click to enable real-time desktop alerts</span>
+    </div>
+    <div id="notifListContainer" class="notif-list-container"></div>
+  </div>
+
+  <script src="/static/js/main.js?v=24"></script>
+  {% block scripts %}{% endblock %}
+</body>
+
+</html>

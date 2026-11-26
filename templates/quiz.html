@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Practice & Quizzes - AI Doubt Solver</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css">
+  <link rel="stylesheet" href="/static/css/style.css?v=9">
+  <link rel="stylesheet" href="/static/css/quiz.css?v=10">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.4/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-left">
+      <button id="btnSidebarToggle" class="btn-icon hidden" title="Toggle Navigation" onclick="toggleSidebar()">☰</button>
+      <a href="/" class="logo-brand">
+        <div class="logo-icon">✦</div>
+        <span>AI <span class="text-brand">Doubt Solver</span></span>
+      </a>
+    </div>
+
+    <div class="header-center"></div>
+
+    <div class="header-right">
+      <button id="btnSettingsModal" class="btn-icon hidden" onclick="openModal('settingsModal')" title="System Configuration">⚙</button>
+      <button id="btnThemeToggle" class="btn-icon" onclick="toggleTheme()" title="Switch Light/Dark Mode">☾</button>
+      <button class="btn-icon" onclick="toggleNotifications()" title="Notifications">
+        🔔
+        <span id="notifDot" class="badge-dot hidden"></span>
+      </button>
+
+      <a href="/login" class="user-profile-badge" title="Profile Details">
+        <div id="userAvatar" class="user-avatar">A</div>
+        <div class="user-info-text">
+          <div id="userNameHeader" class="user-name-label">Student</div>
+          <div id="userRoleHeader" class="user-role-label">Student</div>
+        </div>
+      </a>
+      <button class="btn-icon" onclick="handleLogout()" title="Sign Out">↪</button>
+    </div>
+  </header>
+
+  <div class="app-body">
+    <aside id="appSidebar" class="app-sidebar">
+      <div>
+        <div id="studentNavGroup" class="sidebar-nav-group">
+          <div class="sidebar-title">Learning Center</div>
+          <a id="navItemDashboard" href="/" class="sidebar-link">
+            <span>⊞</span>
+            <span>Dashboard</span>
+          </a>
+          <a id="navItemAskDoubt" href="/ask" class="sidebar-link highlight">
+            <span>＋</span>
+            <span>Ask AI Doubt</span>
+          </a>
+          <a id="navItemHistory" href="/history" class="sidebar-link">
+            <span>◷</span>
+            <span>Doubt History</span>
+          </a>
+          <a id="navItemBookmarks" href="/bookmarks" class="sidebar-link">
+            <span>🔖</span>
+            <span>Bookmarks</span>
+          </a>
+          <a id="navItemQuiz" href="/quiz" class="sidebar-link active">
+            <span>✓</span>
+            <span>Practice & Quizzes</span>
+          </a>
+          <a id="navItemRecommendations" href="/recommendations" class="sidebar-link">
+            <span>◎</span>
+            <span>AI Study Path</span>
+          </a>
+        </div>
+      </div>
+    </aside>
+
+    <main class="app-main">
+      <div class="quiz-header-row">
+        <div>
+          <h1 class="quiz-header-title">
+            <span>✓</span>
+            <span>Practice & Topic Quizzes</span>
+          </h1>
+          <p class="quiz-header-desc">
+            Test your academic mastery with topic-based questions derived from solved doubts.
+          </p>
+        </div>
+        <div class="quiz-nav-group">
+          <button id="tabBtnNewPractice" type="button" class="btn btn-primary quiz-nav-btn" onclick="showQuizTab('new')">
+            <span>New Practice</span>
+          </button>
+          <button id="tabBtnPrevPractice" type="button" class="btn btn-outline quiz-nav-btn" onclick="showQuizTab('previous')">
+            <span>Previous Practice Quizzes</span>
+          </button>
+        </div>
+      </div>
+
+      <div id="newPracticeTabSection">
+        <div id="quizConfigPanel" class="card-panel quiz-config-panel">
+          <div class="quiz-config-header">
+            <h2 class="quiz-config-title">
+              Practice Topics & Quizzes
+            </h2>
+            <p class="quiz-config-desc">
+              Choose from previously solved topics or apply a quiz for any brand new topic to test your mastery.
+            </p>
+          </div>
+
+          <form onsubmit="handleGenerateQuiz(event)">
+            <div class="quiz-mode-pill-group">
+              <button type="button" id="btnQuizModeSolved" class="btn btn-primary btn-sm" onclick="setQuizTopicMode('solved')">Previously Solved Topics</button>
+              <button type="button" id="btnQuizModeNew" class="btn btn-outline btn-sm" onclick="setQuizTopicMode('new')">+ Apply Quiz for New Topic</button>
+            </div>
+
+            <div class="quiz-grid-form">
+              <div id="quizSolvedTopicContainer">
+                <label class="form-label font-bold">Select Solved Topic</label>
+                <select id="quizTopicSelect" class="form-control quiz-input-lg" onchange="handleTopicSelectChange()">
+                  <option value="">Loading your solved topics...</option>
+                </select>
+              </div>
+
+              <div id="quizNewTopicContainer" class="hidden">
+                <label class="form-label font-bold">Enter New Topic Name</label>
+                <input type="text" id="quizNewTopicInput" class="form-control quiz-input-lg" placeholder="e.g. Thermodynamics, Trigonometry, Binary Search Trees">
+              </div>
+
+              <input type="text" id="quizCustomTopic" class="hidden">
+
+              <div>
+                <label class="form-label font-bold">Subject</label>
+                <select id="quizSubject" class="form-control quiz-input-lg">
+                  <option value="Mathematics">Mathematics</option>
+                  <option value="Physics">Physics</option>
+                  <option value="Chemistry">Chemistry</option>
+                  <option value="Computer Science">Computer Science</option>
+                  <option value="English">English</option>
+                  <option value="Biology">Biology</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="form-label font-bold">Difficulty</label>
+                <select id="quizDifficulty" class="form-control quiz-input-lg">
+                  <option value="Easy">Easy (Fundamentals & Concept Checks)</option>
+                  <option value="Medium" selected>Medium (Application & Standard Exam Problems)</option>
+                  <option value="Hard">Hard (Multi-step & Theoretical Analysis)</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="form-label font-bold">Number of Questions</label>
+                <select id="quizCount" class="form-control quiz-input-lg">
+                  <option value="3" selected>3 Questions (Quick Check)</option>
+                  <option value="5">5 Questions (Standard Practice)</option>
+                  <option value="10">10 Questions (Full Assessment)</option>
+                </select>
+              </div>
+            </div>
+
+            <button id="btnGenerateQuizSubmit" type="submit" class="btn btn-primary quiz-btn-generate">
+              <span>✦</span>
+              <span>Generate Topic Quiz with AI</span>
+            </button>
+          </form>
+        </div>
+
+        <div id="quizRunnerPanel" class="card-panel quiz-runner-panel">
+          <div class="quiz-runner-header">
+            <div>
+              <div id="quizBadgeTopic" class="quiz-badge-brand">TOPIC PRACTICE</div>
+              <span id="quizMetaLabel" class="hidden"></span>
+              <span id="quizProgressFraction" class="hidden"></span>
+              <h2 id="quizQuestionNumber" class="quiz-runner-title">Question 1</h2>
+            </div>
+            <div class="quiz-timer-text" id="quizTimerDisplay">Self-Paced Practice</div>
+          </div>
+
+          <div id="quizQuestionStatement" class="quiz-question-statement"></div>
+
+          <div id="quizOptionsList" class="quiz-options-group"></div>
+
+          <div class="quiz-nav-actions">
+            <button id="btnQuizPrev" type="button" class="btn btn-outline quiz-btn-nav" onclick="navQuizQuestion(-1)">← Previous</button>
+            <button id="btnQuizNext" type="button" class="btn btn-primary quiz-btn-nav" onclick="navQuizQuestion(1)">Next Question →</button>
+          </div>
+        </div>
+
+        <div id="quizResultPanel" class="quiz-result-wrap">
+          <div class="card-panel quiz-result-card">
+            <div class="quiz-trophy">🏆</div>
+            <h2 class="quiz-result-title">Practice Quiz Completed!</h2>
+            <p id="quizResultTopic" class="quiz-result-desc"></p>
+
+            <div class="quiz-score-box">
+              <div id="quizScoreNumber" class="quiz-score-num">0 / 0</div>
+              <div id="quizScorePercent" class="quiz-score-pct">0% Score</div>
+            </div>
+
+            <div class="quiz-result-buttons">
+              <button id="btnRetakeCurrentQuiz" class="btn btn-primary quiz-result-btn" onclick="retakeCurrentQuiz()">
+                <span>↻</span>
+                <span>Retake Same Quiz</span>
+              </button>
+              <button class="btn btn-outline quiz-result-btn" onclick="showQuizTab('new')">
+                <span>+</span>
+                <span>New Practice Quiz</span>
+              </button>
+              <button class="btn btn-outline quiz-result-btn" onclick="showQuizTab('previous')">
+                <span>◷</span>
+                <span>View Previous Practice</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="card-panel quiz-explanation-card">
+            <h3 class="quiz-explanation-title">Detailed Solutions & Explanations</h3>
+            <div id="quizExplanationsList" class="quiz-explanation-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="previousPracticeTabSection" class="quiz-prev-tab">
+        <div class="card-panel quiz-prev-card">
+          <div class="quiz-prev-header">
+            <div>
+              <h2 class="quiz-config-title">
+                Previous Practice Quizzes
+              </h2>
+              <p class="quiz-config-desc">
+                Review past quiz attempts, re-take quizzes to improve accuracy, and track learning scores.
+              </p>
+            </div>
+            <button class="btn btn-primary" onclick="showQuizTab('new')">+ New Practice Quiz</button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table teacher-table-full">
+              <thead>
+                <tr>
+                  <th>Quiz Topic</th>
+                  <th>Subject</th>
+                  <th>Difficulty</th>
+                  <th>Score</th>
+                  <th>Completed</th>
+                  <th class="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="previousPracticeTableBody">
+                <tr>
+                  <td colspan="6" class="teacher-table-empty">
+                    Loading past practice records...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="quizReviewModal" class="modal-backdrop">
+        <div class="modal-card quiz-modal-dialog">
+          <div class="quiz-modal-top">
+            <div>
+              <div id="modalReviewBadge" class="quiz-badge-brand"></div>
+              <span id="modalReviewMeta" class="hidden"></span>
+              <h2 id="modalReviewTitle" class="quiz-runner-title"></h2>
+              <div id="modalReviewScore" class="quiz-modal-score"></div>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('quizReviewModal')">&times;</button>
+          </div>
+
+          <div id="modalReviewBody" class="flex-col gap-lg mb-lg"></div>
+
+          <div class="quiz-modal-actions">
+            <button id="btnModalRetakeQuiz" type="button" class="btn btn-primary btn-md">
+              <span>↻ Retake Quiz</span>
+            </button>
+            <button type="button" class="btn btn-outline btn-md" onclick="closeModal('quizReviewModal')">Close</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="settingsModal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="flex-between mb-lg">
+        <div class="modal-title flex-row gap-sm">
+          <span class="text-brand">✦</span>
+          <span>AI Engine Configuration</span>
+        </div>
+        <button class="btn-icon" onclick="closeModal('settingsModal')">✕</button>
+      </div>
+      <form onsubmit="handleQuickSaveSettings(event)">
+        <div class="form-group">
+          <label class="form-label">API Key</label>
+          <input type="password" id="modalGrokKey" class="form-control font-mono" placeholder="gsk_... or xai-...">
+          <div class="form-hint text-muted">
+            Enter your API key to connect live reasoning models directly.
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Model Selection</label>
+          <select id="modalGrokModel" class="form-control">
+            <option value="openai/gpt-oss-120b">openai/gpt-oss-120b (High Reasoning Speed)</option>
+            <option value="qwen/qwen3.8-27b">qwen/qwen3.8-27b (Mathematical Logic)</option>
+            <option value="openai/gpt-oss-20b">openai/gpt-oss-20b (Fast Response)</option>
+            <option value="grok-2-latest">grok-2-latest (xAI Grok)</option>
+          </select>
+        </div>
+        <div class="flex-end gap-md">
+          <button type="button" class="btn btn-outline" onclick="closeModal('settingsModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Settings</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="notifDrawer" class="notif-drawer-box">
+    <div class="notif-header-row">
+      <div class="panel-title">Notifications</div>
+      <div class="flex-row gap-sm">
+        <button class="btn btn-outline btn-sm" onclick="testDesktopNotification()" title="Test Desktop Notification">Test Desktop Alert</button>
+        <button class="btn btn-outline btn-sm" onclick="clearAllNotifications()">Clear All</button>
+      </div>
+    </div>
+    <div id="notifListContainer" class="notif-list-container"></div>
+  </div>
+
+  <script src="/static/js/main.js?v=24"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      initQuizPage();
+    });
+  </script>
+</body>
+</html>

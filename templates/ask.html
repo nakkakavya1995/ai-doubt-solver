@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ask a Doubt - AI Doubt Solver</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css">
+  <link rel="stylesheet" href="/static/css/style.css?v=9">
+  <link rel="stylesheet" href="/static/css/doubt.css?v=9">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.4/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-left">
+      <button id="btnSidebarToggle" class="btn-icon hidden" title="Toggle Navigation" onclick="toggleSidebar()">☰</button>
+      <a href="/" class="logo-brand">
+        <div class="logo-icon">✦</div>
+        <span>AI <span class="text-brand">Doubt Solver</span></span>
+      </a>
+    </div>
+
+    <div class="header-center"></div>
+
+    <div class="header-right">
+      <button id="btnSettingsModal" class="btn-icon hidden" onclick="openModal('settingsModal')" title="System Configuration">⚙</button>
+      <button id="btnThemeToggle" class="btn-icon" onclick="toggleTheme()" title="Switch Light/Dark Mode">☾</button>
+      <button class="btn-icon" onclick="toggleNotifications()" title="Notifications">
+        🔔
+        <span id="notifDot" class="badge-dot hidden"></span>
+      </button>
+
+      <a href="/login" class="user-profile-badge" title="Profile Details">
+        <div id="userAvatar" class="user-avatar">A</div>
+        <div class="user-info-text">
+          <div id="userNameHeader" class="user-name-label">Student</div>
+          <div id="userRoleHeader" class="user-role-label">Student</div>
+        </div>
+      </a>
+      <button class="btn-icon" onclick="handleLogout()" title="Sign Out">↪</button>
+    </div>
+  </header>
+
+  <div class="app-body">
+    <aside id="appSidebar" class="app-sidebar">
+      <div>
+        <div id="studentNavGroup" class="sidebar-nav-group">
+          <div class="sidebar-title">Learning Center</div>
+          <a id="navItemDashboard" href="/" class="sidebar-link">
+            <span>⊞</span>
+            <span>Dashboard</span>
+          </a>
+          <a id="navItemAskDoubt" href="/ask" class="sidebar-link highlight active">
+            <span>＋</span>
+            <span>Ask AI Doubt</span>
+          </a>
+          <a id="navItemHistory" href="/history" class="sidebar-link">
+            <span>◷</span>
+            <span>Doubt History</span>
+          </a>
+          <a id="navItemBookmarks" href="/bookmarks" class="sidebar-link">
+            <span>🔖</span>
+            <span>Bookmarks</span>
+          </a>
+          <a id="navItemQuiz" href="/quiz" class="sidebar-link">
+            <span>✓</span>
+            <span>Practice & Quizzes</span>
+          </a>
+          <a id="navItemRecommendations" href="/recommendations" class="sidebar-link">
+            <span>◎</span>
+            <span>AI Study Path</span>
+          </a>
+        </div>
+      </div>
+    </aside>
+
+    <main class="app-main">
+      <div class="doubt-page-header">
+        <h1 class="doubt-page-title">Ask a Doubt</h1>
+        <p class="doubt-page-desc">
+          Submit doubts via text descriptions, code snippets, photos of problem sheets, or PDF documents.
+        </p>
+      </div>
+
+      <div class="input-tab-group">
+        <button type="button" class="input-tab active" data-type="text" onclick="setDoubtInputType('text')">Text Question</button>
+        <button type="button" class="input-tab" data-type="image" onclick="setDoubtInputType('image')">Image / Photo</button>
+        <button type="button" class="input-tab" data-type="document" onclick="setDoubtInputType('document')">PDF / Document</button>
+        <button type="button" class="input-tab" data-type="code" onclick="setDoubtInputType('code')">Code Debugger</button>
+      </div>
+
+      <form id="formAskDoubt" class="card-panel doubt-form-panel" onsubmit="handleAskDoubt(event)">
+        <div class="doubt-input-grid">
+          <div>
+            <label class="form-label">Subject</label>
+            <select id="doubtSubject" class="form-control">
+              <option value="Mathematics">Mathematics</option>
+              <option value="Physics">Physics</option>
+              <option value="Chemistry">Chemistry</option>
+              <option value="Computer Science">Computer Science</option>
+              <option value="English">English</option>
+              <option value="Biology">Biology</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="form-label">Title / Problem Heading (Optional)</label>
+            <input type="text" id="doubtTitle" class="form-control" placeholder="e.g. Find limit of (sin 3x)/x without L'Hopital">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Target Explanation Rigor</label>
+          <div class="level-cards">
+            <div class="level-card" data-level="simplified" onclick="selectExplanationLevel('simplified')">
+              <div class="level-card-title">Simplified</div>
+              <div class="level-card-desc">High school / intuitive analogies, essential basics</div>
+            </div>
+            <div class="level-card active" data-level="intermediate" onclick="selectExplanationLevel('intermediate')">
+              <div class="level-card-title">Intermediate</div>
+              <div class="level-card-desc">Standard curriculum rigor with step-by-step logic</div>
+            </div>
+            <div class="level-card" data-level="detailed" onclick="selectExplanationLevel('detailed')">
+              <div class="level-card-title">Detailed</div>
+              <div class="level-card-desc">Theoretical foundations, proofs & edge conditions</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="codeSection" class="form-group hidden">
+          <div class="flex-between mb-xs">
+            <label class="form-label mb-0">Code Snippet & Language</label>
+            <select id="codeLanguage" class="form-control doubt-code-select">
+              <option value="python">Python</option>
+              <option value="javascript">JavaScript</option>
+              <option value="java">Java</option>
+              <option value="cpp">C++</option>
+              <option value="c">C</option>
+              <option value="sql">SQL</option>
+            </select>
+          </div>
+          <textarea id="codeSnippet" class="form-control font-mono doubt-code-area" rows="7" placeholder="def binary_search(arr, target):&#10;    pass"></textarea>
+        </div>
+
+        <div id="attachmentSection" class="form-group hidden">
+          <label id="attachmentLabel" class="form-label">Upload Problem File</label>
+          <div class="file-dropzone">
+            <input type="file" id="doubtAttachment" onchange="handleFileSelected(event)">
+            <div class="doubt-dropzone-icon">☁</div>
+            <div class="doubt-dropzone-text">Click or drag file here to upload</div>
+            <div id="fileTypeHint" class="doubt-dropzone-hint">PDF, PNG, JPG up to 25MB</div>
+          </div>
+          <div id="filePreviewBar" class="doubt-file-preview">
+            <div class="doubt-file-info">
+              <span id="docFileIcon" class="doubt-doc-badge">📄 DOC</span>
+              <img id="imageThumbnail" class="doubt-thumb-img" src="" alt="Thumbnail">
+              <span id="fileNameLabel" class="doubt-file-name">file.png</span>
+            </div>
+            <button type="button" class="btn-icon doubt-btn-remove-file" onclick="removeSelectedFile()">✕</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Question Details / Requirements</label>
+          <textarea id="doubtQuestion" class="form-control doubt-textarea-main" rows="5" placeholder="State your doubt clearly. What have you attempted and where are you getting stuck?"></textarea>
+        </div>
+
+        <div class="doubt-submit-row">
+          <button id="btnSubmitDoubt" type="submit" class="btn btn-primary doubt-btn-solve">
+            <span>✦</span>
+            <span>Solve Doubt with AI</span>
+          </button>
+        </div>
+      </form>
+    </main>
+  </div>
+
+  <div id="settingsModal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="flex-between mb-lg">
+        <div class="modal-title flex-row gap-sm">
+          <span class="text-brand">✦</span>
+          <span>AI Engine Configuration</span>
+        </div>
+        <button class="btn-icon" onclick="closeModal('settingsModal')">✕</button>
+      </div>
+      <form onsubmit="handleQuickSaveSettings(event)">
+        <div class="form-group">
+          <label class="form-label">API Key</label>
+          <input type="password" id="modalGrokKey" class="form-control font-mono" placeholder="gsk_... or xai-...">
+          <div class="form-hint text-muted">
+            Enter your API key to connect live reasoning models directly.
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Model Selection</label>
+          <select id="modalGrokModel" class="form-control">
+            <option value="openai/gpt-oss-120b">openai/gpt-oss-120b (High Reasoning Speed)</option>
+            <option value="qwen/qwen3.8-27b">qwen/qwen3.8-27b (Mathematical Logic)</option>
+            <option value="openai/gpt-oss-20b">openai/gpt-oss-20b (Fast Response)</option>
+            <option value="grok-2-latest">grok-2-latest (xAI Grok)</option>
+          </select>
+        </div>
+        <div class="flex-end gap-md">
+          <button type="button" class="btn btn-outline" onclick="closeModal('settingsModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Settings</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="notifDrawer" class="notif-drawer-box">
+    <div class="notif-header-row">
+      <div class="panel-title">Notifications</div>
+      <div class="flex-row gap-sm">
+        <button class="btn btn-outline btn-sm" onclick="testDesktopNotification()" title="Test Desktop Notification">Test Desktop Alert</button>
+        <button class="btn btn-outline btn-sm" onclick="clearAllNotifications()">Clear All</button>
+      </div>
+    </div>
+    <div id="notifListContainer" class="notif-list-container"></div>
+  </div>
+
+  <script src="/static/js/main.js?v=24"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const params = new URLSearchParams(window.location.search);
+      const t = params.get("type");
+      if (t) {
+        setDoubtInputType(t);
+      }
+    });
+  </script>
+</body>
+</html>

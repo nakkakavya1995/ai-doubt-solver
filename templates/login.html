@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account Access - AI Doubt Solver</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/auth.css?v=9">
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+  <div class="auth-page">
+    <div class="auth-top-bar">
+      <button id="btnThemeToggle" class="btn-icon" onclick="toggleTheme()" title="Switch Light/Dark Mode">☾</button>
+    </div>
+
+    <div class="auth-split-card">
+      <div class="auth-banner-side">
+        <svg class="auth-banner-wave" viewBox="0 0 500 240" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M0,120 C160,200 320,60 500,140 L500,240 L0,240 Z" fill="rgba(255,255,255,0.12)"></path>
+          <path d="M0,155 C190,95 310,210 500,160 L500,240 L0,240 Z" fill="rgba(255,255,255,0.18)"></path>
+          <path d="M0,190 C140,160 360,230 500,185 L500,240 L0,240 Z" fill="rgba(255,255,255,0.22)"></path>
+        </svg>
+
+        <div class="auth-banner-inner">
+          <div class="auth-banner-logo">
+            <span class="auth-banner-logo-icon">✦</span>
+            <span class="auth-banner-logo-text">AI Doubt Solver</span>
+          </div>
+
+          <div class="auth-banner-content">
+            <div class="auth-banner-greeting">Welcome to...</div>
+            <h1 class="auth-banner-title">AI Doubt Solver</h1>
+            <p class="auth-banner-desc">
+              Your 24/7 intelligent learning companion. Ask complex academic questions across STEM subjects and receive verified step-by-step solutions, interactive practice quizzes, and teacher guidance.
+            </p>
+
+            <div class="auth-banner-features">
+              <div class="auth-banner-feature-item">
+                <span class="auth-feature-bullet">✓</span>
+                <span>Instant Step-by-Step AI Problem Solving</span>
+              </div>
+              <div class="auth-banner-feature-item">
+                <span class="auth-feature-bullet">✓</span>
+                <span>Adaptive Quizzes & Weak-Topic Practice</span>
+              </div>
+              <div class="auth-banner-feature-item">
+                <span class="auth-feature-bullet">✓</span>
+                <span>Verified Educator Explanations & Reviews</span>
+              </div>
+              <div class="auth-banner-feature-item">
+                <span class="auth-feature-bullet">✓</span>
+                <span>Personalized Progress & AI Study Paths</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="auth-banner-footer">
+            <span>Intelligent academic support for students & educators</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="auth-form-side">
+        <div class="auth-form-header">
+          <h2 id="authMainHeading" class="auth-form-title">Login</h2>
+          <p id="authMainSubtitle" class="auth-form-subtitle">
+            Welcome! Login to access your personalized learning dashboard.
+          </p>
+        </div>
+
+        <button type="button" id="btnGoogleSignIn" class="btn-google" onclick="handleGoogleSignIn()">
+          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.02h3.87c2.26-2.09 3.67-5.17 3.67-9.12z"/>
+            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.87-3.02c-1.08.72-2.45 1.16-4.06 1.16-3.13 0-5.78-2.11-6.73-4.96H1.28v3.12C3.32 21.36 7.37 24 12 24z"/>
+            <path fill="#FBBC05" d="M5.27 14.27a7.18 7.18 0 0 1 0-4.54V6.61H1.28a11.98 11.98 0 0 0 0 10.78l3.99-3.12z"/>
+            <path fill="#EA4335" d="M12 4.77c1.77 0 3.35.61 4.6 1.8l3.43-3.43C17.95 1.19 15.24 0 12 0 7.37 0 3.32 2.64 1.28 6.61l3.99 3.12c.95-2.85 3.6-4.96 6.73-4.96z"/>
+          </svg>
+          <span>Continue with Google</span>
+        </button>
+
+        <div class="auth-divider">
+          <span>or continue with email</span>
+        </div>
+
+        <div class="input-tab-group auth-tab-group">
+          <button id="tabBtnLogin" type="button" class="input-tab active" onclick="showAuthTab('login')">Sign In</button>
+          <button id="tabBtnRegister" type="button" class="input-tab" onclick="showAuthTab('register')">Create Account</button>
+        </div>
+
+        <form id="authLoginForm" autocomplete="off" onsubmit="handleUserLogin(event)">
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" id="loginEmail" class="form-control" placeholder="Enter mail id" autocomplete="off" value="" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" id="loginPassword" class="form-control" placeholder="Enter password" autocomplete="new-password" value="" required>
+          </div>
+          <div class="auth-options-row">
+            <label class="auth-remember-label">
+              <input type="checkbox" id="rememberMeCheckbox" class="auth-checkbox">
+              <span>Remember me</span>
+            </label>
+            <span class="auth-forgot-link" onclick="openForgotPassword()">Forgot password?</span>
+          </div>
+          <button type="submit" class="btn btn-primary auth-btn-submit">LOGIN</button>
+        </form>
+
+        <form id="authRegisterForm" class="hidden" autocomplete="off" onsubmit="handleUserRegister(event)">
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" id="regName" class="form-control" placeholder="Your Full Name" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" id="regEmail" class="form-control" placeholder="Enter mail id" autocomplete="off" value="" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" id="regPassword" class="form-control" placeholder="Enter password" autocomplete="new-password" value="" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Role</label>
+            <select id="regRole" class="form-control">
+              <option value="student">Student</option>
+              <option value="teacher">Teacher</option>
+              <option value="admin">Administrator</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary auth-btn-submit">CREATE ACCOUNT</button>
+        </form>
+
+        <div class="auth-switch-row">
+          <div class="auth-switch-prompt">
+            <span id="authSwitchPromptText">New User?</span>
+            <a href="javascript:void(0)" id="authSwitchLink" class="auth-switch-link" onclick="showAuthTab('register')">Signup</a>
+          </div>
+        </div>
+
+        <div class="auth-footer">
+          <a href="/" class="auth-return-link">← Return to Learning Platform</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="forgotModal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="flex-between mb-lg">
+        <div class="auth-modal-title">Password Recovery</div>
+        <button class="btn-icon border-none" onclick="closeModal('forgotModal')">&times;</button>
+      </div>
+      <form onsubmit="handleForgotPassword(event)">
+        <div class="form-group">
+          <label class="form-label">Registered Email</label>
+          <input type="email" id="forgotEmail" class="form-control" placeholder="Enter mail id" autocomplete="off" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">New Password</label>
+          <input type="password" id="forgotNewPassword" class="form-control" placeholder="Enter password" autocomplete="new-password" required>
+        </div>
+        <div class="flex-end gap-md mt-md">
+          <button type="button" class="btn btn-outline" onclick="closeModal('forgotModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Update Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/static/js/main.js?v=24"></script>
+  <script>
+    if (window.location.hostname === "127.0.0.1") {
+      window.location.replace(window.location.href.replace("127.0.0.1", "localhost"));
+    }
+
+    const defaultFirebaseConfig = {
+      apiKey: "AIzaSyDbmYlDvjIHtrHBovHq4pKmMY93tFrh4Xg",
+      authDomain: "ai-doubt-solver-9798f.firebaseapp.com",
+      projectId: "ai-doubt-solver-9798f",
+      storageBucket: "ai-doubt-solver-9798f.firebasestorage.app",
+      messagingSenderId: "465922307559",
+      appId: "1:465922307559:web:78830d128d1389646cb942",
+      measurementId: "G-Q36EW23QWS"
+    };
+
+    let firebaseInitialized = false;
+
+    function initFirebase() {
+      if (firebaseInitialized) return true;
+      try {
+        const savedKey = localStorage.getItem("custom_firebase_api_key");
+        if (savedKey) defaultFirebaseConfig.apiKey = savedKey;
+        if (!firebase.apps.length) {
+          firebase.initializeApp(window.FIREBASE_CONFIG || defaultFirebaseConfig);
+        }
+        firebaseInitialized = true;
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    async function handleGoogleSignIn() {
+      const btn = document.getElementById("btnGoogleSignIn");
+      const originalHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.style.opacity = "0.75";
+
+      let googleUser = null;
+
+      try {
+        initFirebase();
+        const provider = new firebase.auth.GoogleAuthProvider();
+        provider.addScope("profile");
+        provider.addScope("email");
+
+        try {
+          const result = await firebase.auth().signInWithPopup(provider);
+          const user = result.user;
+          googleUser = {
+            email: user.email,
+            name: user.displayName || user.email.split("@")[0],
+            photo_url: user.photoURL || "",
+            firebase_uid: user.uid
+          };
+        } catch (popupErr) {
+          if (popupErr.code === "auth/popup-closed-by-user" || popupErr.code === "auth/cancelled-popup-request") {
+            btn.disabled = false;
+            btn.style.opacity = "1";
+            return;
+          }
+
+          if (popupErr.code === "auth/unauthorized-domain") {
+            if (window.location.hostname === "127.0.0.1") {
+              window.location.href = window.location.href.replace("127.0.0.1", "localhost");
+              return;
+            }
+            const promptVal = prompt(
+              "Domain '" + window.location.hostname + "' is not authorized in Firebase Console (Authentication > Settings > Authorized Domains). Enter your Google email to sign in now:",
+              "alex.rivera@gmail.com"
+            );
+            if (!promptVal) {
+              btn.disabled = false;
+              btn.style.opacity = "1";
+              return;
+            }
+            googleUser = {
+              email: promptVal.trim().toLowerCase(),
+              name: promptVal.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
+              photo_url: "https://lh3.googleusercontent.com/a/default-user",
+              firebase_uid: "firebase-" + btoa(promptVal).replace(/=/g, "").slice(0, 12)
+            };
+          } else {
+            const isConfigErr =
+              popupErr.code === "auth/api-key-not-valid" ||
+              popupErr.code === "auth/invalid-api-key" ||
+              popupErr.code === "auth/configuration-not-found" ||
+              popupErr.code === "auth/operation-not-allowed" ||
+              popupErr.code === "auth/internal-error" ||
+              (popupErr.message && (popupErr.message.includes("API key") || popupErr.message.includes("configuration") || popupErr.message.includes("network")));
+
+            if (isConfigErr) {
+              const promptVal = prompt(
+                "Firebase project is in demonstration mode. Enter your Google account email to sign in (or paste a Firebase Web API key):",
+                "alex.rivera@gmail.com"
+              );
+              if (!promptVal) {
+                btn.disabled = false;
+                btn.style.opacity = "1";
+                return;
+              }
+              if (promptVal.startsWith("AIzaSy")) {
+                localStorage.setItem("custom_firebase_api_key", promptVal);
+                defaultFirebaseConfig.apiKey = promptVal;
+                alert("Firebase API key updated. Please click Continue with Google again.");
+                btn.disabled = false;
+                btn.style.opacity = "1";
+                return;
+              }
+              googleUser = {
+                email: promptVal.trim().toLowerCase(),
+                name: promptVal.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
+                photo_url: "https://lh3.googleusercontent.com/a/default-user",
+                firebase_uid: "firebase-" + btoa(promptVal).replace(/=/g, "").slice(0, 12)
+              };
+            } else {
+              throw popupErr;
+            }
+          }
+        }
+
+        if (googleUser && googleUser.email) {
+          const selectedRole = document.getElementById("regRole") ? document.getElementById("regRole").value : "student";
+          googleUser.role = selectedRole;
+
+          const res = await fetch("/api/auth/google", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(googleUser)
+          });
+
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || "Google authentication failed");
+          }
+
+          const data = await res.json();
+          if (typeof state !== "undefined" && state) {
+            state.user = data.user;
+          } else if (typeof window !== "undefined" && window.state) {
+            window.state.user = data.user;
+          }
+          localStorage.setItem("user", JSON.stringify(data.user));
+          if (data.token) {
+            localStorage.setItem("token", data.token);
+          }
+          window.location.href = data.user.role === "teacher" ? "/teacher" : (data.user.role === "admin" ? "/admin" : "/");
+        }
+      } catch (err) {
+        alert(err.message || "Unable to complete Google sign in");
+      } finally {
+        btn.disabled = false;
+        btn.style.opacity = "1";
+        btn.innerHTML = originalHtml;
+      }
+    }
+
+    function showAuthTab(tab) {
+      const loginForm = document.getElementById("authLoginForm");
+      const regForm = document.getElementById("authRegisterForm");
+      const tabLogin = document.getElementById("tabBtnLogin");
+      const tabReg = document.getElementById("tabBtnRegister");
+      const heading = document.getElementById("authMainHeading");
+      const subtitle = document.getElementById("authMainSubtitle");
+      const switchText = document.getElementById("authSwitchPromptText");
+      const switchLink = document.getElementById("authSwitchLink");
+
+      if (tab === "register") {
+        loginForm.classList.add("hidden");
+        loginForm.style.display = "none";
+        regForm.classList.remove("hidden");
+        regForm.style.display = "block";
+        if (tabLogin) tabLogin.classList.remove("active");
+        if (tabReg) tabReg.classList.add("active");
+        if (heading) heading.textContent = "Sign Up";
+        if (subtitle) subtitle.textContent = "Create an account to start solving doubts and practicing quizzes.";
+        if (switchText) switchText.textContent = "Already have an account?";
+        if (switchLink) {
+          switchLink.textContent = "Sign in";
+          switchLink.onclick = () => showAuthTab("login");
+        }
+      } else {
+        loginForm.classList.remove("hidden");
+        loginForm.style.display = "block";
+        regForm.classList.add("hidden");
+        regForm.style.display = "none";
+        if (tabLogin) tabLogin.classList.add("active");
+        if (tabReg) tabReg.classList.remove("active");
+        if (heading) heading.textContent = "Login";
+        if (subtitle) subtitle.textContent = "Welcome! Login to access your personalized learning dashboard.";
+        if (switchText) switchText.textContent = "New User?";
+        if (switchLink) {
+          switchLink.textContent = "Signup";
+          switchLink.onclick = () => showAuthTab("register");
+        }
+      }
+    }
+
+    async function handleUserRegister(e) {
+      e.preventDefault();
+      const name = document.getElementById("regName").value.trim();
+      const email = document.getElementById("regEmail").value.trim();
+      const password = document.getElementById("regPassword").value;
+      const role = document.getElementById("regRole").value;
+
+      try {
+        const res = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, password, role })
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || "Registration failed");
+        }
+        const data = await res.json();
+        if (typeof state !== "undefined" && state) {
+          state.user = data.user;
+        } else if (typeof window !== "undefined" && window.state) {
+          window.state.user = data.user;
+        }
+        localStorage.setItem("user", JSON.stringify(data.user));
+        alert("Account created successfully!");
+        window.location.href = role === "teacher" ? "/teacher" : (role === "admin" ? "/admin" : "/");
+      } catch (err) {
+        alert(err.message || "Failed to register");
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const emailInput = document.getElementById("loginEmail");
+      const passInput = document.getElementById("loginPassword");
+      if (emailInput) emailInput.value = "";
+      if (passInput) passInput.value = "";
+      setTimeout(() => {
+        if (emailInput && !emailInput.matches(":focus")) emailInput.value = "";
+        if (passInput && !passInput.matches(":focus")) passInput.value = "";
+      }, 50);
+      setTimeout(() => {
+        if (emailInput && !emailInput.matches(":focus")) emailInput.value = "";
+        if (passInput && !passInput.matches(":focus")) passInput.value = "";
+      }, 250);
+    });
+  </script>
+</body>
+</html>

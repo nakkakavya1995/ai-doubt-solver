@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - AI Doubt Solver</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css">
+  <link rel="stylesheet" href="/static/css/style.css?v=16">
+  <link rel="stylesheet" href="/static/css/admin.css?v=9">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.4/dist/confetti.browser.min.js"></script>
+</head>
+
+<body class="page-admin">
+  <header class="app-header">
+    <div class="header-left">
+      <button id="btnSidebarToggle" class="btn-icon hidden" title="Toggle Navigation"
+        onclick="toggleSidebar()">☰</button>
+      <a href="/" class="logo-brand">
+        <div class="logo-icon">✦</div>
+        <span>AI <span class="text-brand">Doubt Solver</span></span>
+      </a>
+    </div>
+
+    <div class="header-center"></div>
+
+    <div class="header-right">
+      <button id="btnThemeToggle" class="btn-icon" onclick="toggleTheme()" title="Switch Light/Dark Mode">☾</button>
+      <button class="btn-icon" onclick="toggleNotifications()" title="Notifications">
+        🔔
+        <span id="notifDot" class="badge-dot hidden"></span>
+      </button>
+
+      <a href="/login" class="user-profile-badge" title="Profile Details">
+        <div id="userAvatar" class="user-avatar">A</div>
+        <div class="user-info-text">
+          <div id="userNameHeader" class="user-name-label">Administrator</div>
+          <div id="userRoleHeader" class="user-role-label">Admin</div>
+        </div>
+      </a>
+      <button class="btn-icon" onclick="handleLogout()" title="Sign Out">↪</button>
+    </div>
+  </header>
+
+  <div class="app-body">
+    <aside id="appSidebar" class="app-sidebar">
+      <div>
+        <div id="adminNavGroup" class="sidebar-nav-group">
+          <div class="sidebar-title text-purple">Administration</div>
+          <a href="/admin" class="sidebar-link mb-xs" id="adminSidebarDashboardLink"
+            onclick="showAdminTab('users'); return false;">
+            <span>Admin Dashboard</span>
+          </a>
+          <button id="adminSidebarTabUsers" type="button" class="sidebar-link active" onclick="showAdminTab('users')">
+            <span>All Users</span>
+          </button>
+          <button id="adminSidebarTabTeachers" type="button" class="sidebar-link" onclick="showAdminTab('teachers')">
+            <span>Teacher Management</span>
+          </button>
+          <button id="adminSidebarTabSubjects" type="button" class="sidebar-link" onclick="showAdminTab('subjects')">
+            <span>Subjects</span>
+          </button>
+          <button id="adminSidebarTabActivity" type="button" class="sidebar-link" onclick="showAdminTab('activity')">
+            <span>Activity</span>
+          </button>
+          <button id="adminSidebarTabFeedback" type="button" class="sidebar-link" onclick="showAdminTab('feedback')">
+            <span>Feedback</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="app-main">
+      <div class="admin-header">
+        <h1 class="admin-title">Admin Dashboard</h1>
+        <p class="admin-subtitle">Manage users, teachers, curriculum subjects, platform activity, and student feedback.
+        </p>
+      </div>
+
+      <div class="stats-grid admin-stats-grid">
+        <div class="stat-card">
+          <div class="stat-header"><span>Total Users</span></div>
+          <div id="statAdminUsers" class="stat-value">0</div>
+          <div id="statAdminUserRoles" class="stat-desc">0 Students • 0 Teachers</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header"><span>Doubts Solved</span></div>
+          <div id="statAdminDoubts" class="stat-value admin-stat-brand">0</div>
+          <div class="stat-desc">AI solutions generated</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header"><span>Average Rating</span></div>
+          <div id="statAdminRating" class="stat-value admin-stat-amber">5.0 / 5</div>
+          <div id="statAdminFeedbackCount" class="stat-desc">0 student reviews</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header"><span>Active Subjects</span></div>
+          <div id="statAdminSubjects" class="stat-value admin-stat-green">0</div>
+          <div class="stat-desc">Curriculum categories</div>
+        </div>
+      </div>
+
+      <div id="adminSectionUsers" class="card-panel admin-section">
+        <div class="panel-header admin-panel-header">
+          <div>
+            <div class="panel-title admin-panel-title">User Accounts & Permissions</div>
+            <p class="admin-panel-subtitle">Review, modify roles, or create new user profiles.</p>
+          </div>
+          <div class="admin-header-actions">
+            <button type="button" class="btn btn-outline admin-btn-sm" onclick="loadAdminData()">Refresh</button>
+            <button type="button" class="btn btn-primary admin-btn-action" onclick="toggleAdminAddUserForm()">+ Add User</button>
+          </div>
+        </div>
+
+        <div id="adminAddUserCard" class="admin-form-card hidden">
+          <div class="admin-form-heading">Create New User Account</div>
+          <form onsubmit="handleAdminCreateUser(event)" class="admin-grid-form">
+            <div>
+              <label class="form-label admin-form-label">Full Name</label>
+              <input type="text" id="adminNewUserName" class="form-control" placeholder="Full Name" required>
+            </div>
+            <div>
+              <label class="form-label admin-form-label">Email</label>
+              <input type="email" id="adminNewUserEmail" class="form-control" placeholder="email@example.com" required>
+            </div>
+            <div>
+              <label class="form-label admin-form-label">Temporary Password</label>
+              <input type="password" id="adminNewUserPassword" class="form-control" placeholder="Password" required>
+            </div>
+            <div>
+              <label class="form-label admin-form-label">Role</label>
+              <select id="adminNewUserRole" class="form-control">
+                <option value="student">Student</option>
+                <option value="teacher">Teacher</option>
+                <option value="admin">Administrator</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label admin-form-label">Subject / Grade</label>
+              <input type="text" id="adminNewUserAffiliation" class="form-control"
+                placeholder="e.g. Grade 12 or Physics">
+            </div>
+            <div class="admin-form-actions">
+              <button type="submit" class="btn btn-primary admin-btn-save">Save</button>
+              <button type="button" class="btn btn-outline admin-btn-cancel"
+                onclick="toggleAdminAddUserForm()">Cancel</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="admin-filter-bar">
+          <input type="text" id="adminUserSearchInput" class="form-control admin-search-input"
+            placeholder="Search by name or email..." oninput="filterAdminUsers()">
+          <select id="adminUserRoleFilter" class="form-control admin-role-select" onchange="filterAdminUsers()">
+            <option value="">All Roles</option>
+            <option value="student">Students</option>
+            <option value="teacher">Teachers</option>
+            <option value="admin">Administrators</option>
+          </select>
+          <div id="adminUserCountLabel" class="admin-user-count">Showing all users</div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Role</th>
+                <th>Subject / Grade</th>
+                <th>Email</th>
+                <th>Joined</th>
+                <th class="text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="adminUsersTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="adminSectionTeachers" class="card-panel admin-section hidden">
+        <div class="panel-header admin-panel-header">
+          <div>
+            <div class="panel-title admin-panel-title">Teacher Management & Faculty Accounts</div>
+            <p class="admin-panel-subtitle">View registered teachers, assign curriculum subjects, add new educators, or
+              remove faculty accounts.</p>
+          </div>
+          <div class="admin-header-actions">
+            <button type="button" class="btn btn-outline admin-btn-sm" onclick="loadAdminTeachers()">Refresh</button>
+            <button type="button" class="btn btn-primary admin-btn-action" onclick="toggleAdminAddTeacherForm()">+ Add Teacher</button>
+          </div>
+        </div>
+
+        <div id="adminAddTeacherCard" class="admin-form-card hidden">
+          <div class="admin-form-heading">Register New Teacher</div>
+          <form onsubmit="handleAdminCreateTeacher(event)" class="admin-grid-form">
+            <div>
+              <label class="form-label admin-form-label">Teacher Full Name</label>
+              <input type="text" id="adminNewTeacherName" class="form-control" placeholder="Dr. Sarah Jenkins" required>
+            </div>
+            <div>
+              <label class="form-label admin-form-label">Email Address</label>
+              <input type="email" id="adminNewTeacherEmail" class="form-control" placeholder="teacher@school.edu"
+                required>
+            </div>
+            <div>
+              <label class="form-label admin-form-label">Temporary Password</label>
+              <input type="password" id="adminNewTeacherPassword" class="form-control" placeholder="Initial password"
+                required>
+            </div>
+            <div>
+              <label class="form-label admin-form-label">Assigned Subject</label>
+              <select id="adminNewTeacherSubject" class="form-control" required></select>
+            </div>
+            <div class="admin-form-actions">
+              <button type="submit" class="btn btn-primary admin-btn-save">Create Account</button>
+              <button type="button" class="btn btn-outline admin-btn-cancel"
+                onclick="toggleAdminAddTeacherForm()">Cancel</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Teacher</th>
+                <th>Assigned Subject</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th>Role</th>
+                <th>Created</th>
+                <th class="text-right">Manage</th>
+              </tr>
+            </thead>
+            <tbody id="adminTeachersTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="adminSectionSubjects" class="card-panel admin-section-padded hidden">
+        <div class="panel-header admin-panel-header">
+          <div>
+            <div class="panel-title admin-panel-title">Curriculum Subjects</div>
+            <p class="admin-panel-subtitle">Categories active across questions, quizzes, and faculty routing.</p>
+          </div>
+          <div class="admin-header-actions">
+            <button type="button" class="btn btn-outline admin-btn-sm" onclick="loadAdminSubjects()">Refresh</button>
+            <button type="button" class="btn btn-primary admin-btn-action" onclick="toggleAdminAddSubjectForm()">+ Add Subject</button>
+          </div>
+        </div>
+
+        <div id="adminAddSubjectCard" class="admin-form-card hidden">
+          <div class="admin-form-heading">Add New Curriculum Subject</div>
+          <form onsubmit="handleAddSubject(event)" class="admin-grid-form">
+            <div>
+              <label class="form-label admin-form-label">Subject Name</label>
+              <input type="text" id="newSubjectName" class="form-control" placeholder="e.g. Economics or Data Science"
+                required>
+            </div>
+            <div>
+              <label class="form-label admin-form-label">Description / Subtopics</label>
+              <input type="text" id="newSubjectDesc" class="form-control"
+                placeholder="e.g. Microeconomics, Macroeconomics, Finance">
+            </div>
+            <div class="admin-form-actions">
+              <button type="submit" class="btn btn-primary admin-btn-save">Add Subject</button>
+              <button type="button" class="btn btn-outline admin-btn-cancel"
+                onclick="toggleAdminAddSubjectForm()">Cancel</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="adminSubjectsGrid" class="admin-subjects-grid"></div>
+      </div>
+
+      <div id="adminSectionActivity" class="card-panel admin-section-padded hidden">
+        <div class="panel-header admin-panel-header">
+          <div>
+            <div class="panel-title admin-panel-title">Real-Time Platform Activity</div>
+            <p class="admin-panel-subtitle">Audit log of questions submitted, solutions generated, and user actions.</p>
+          </div>
+          <button type="button" class="btn btn-outline admin-btn-sm" onclick="loadAdminActivity()">Refresh</button>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Action</th>
+                <th>User</th>
+                <th>Role</th>
+                <th>Subject</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody id="adminActivityTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="adminSectionFeedback" class="card-panel admin-section-padded hidden">
+        <div class="admin-section-header">
+          <div>
+            <div class="admin-section-title">Student Feedback & Ratings</div>
+            <p class="admin-panel-subtitle">Student reviews on AI solutions and teacher explanations.</p>
+          </div>
+          <div id="adminFeedbackAvgBadge" class="admin-feedback-avg">5.0 / 5 Average</div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Subject & Doubt</th>
+                <th>Rating</th>
+                <th>Helpful</th>
+                <th>Comment</th>
+                <th>Submitted</th>
+              </tr>
+            </thead>
+            <tbody id="adminFeedbackTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="manageTeacherModal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="admin-modal-header">
+        <div class="admin-modal-title">Manage Teacher Account</div>
+        <button class="btn-icon admin-modal-close" onclick="closeModal('manageTeacherModal')">&times;</button>
+      </div>
+      <form onsubmit="handleAdminUpdateTeacher(event)">
+        <input type="hidden" id="editTeacherId">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" id="editTeacherName" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input type="email" id="editTeacherEmail" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Assigned Subject</label>
+          <select id="editTeacherSubject" class="form-control" required></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Reset Password (leave empty to keep current)</label>
+          <input type="password" id="editTeacherNewPassword" class="form-control" placeholder="New password">
+        </div>
+        <div class="admin-modal-actions">
+          <button type="button" class="btn btn-outline" onclick="closeModal('manageTeacherModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <div id="notifDrawer" class="notif-drawer-box">
+    <div class="notif-header-row">
+      <div class="panel-title">Notifications</div>
+      <div class="flex-row gap-sm">
+        <button id="btnEnableDesktopNotif" class="btn btn-outline btn-sm" onclick="testDesktopNotification()" title="Enable or Test Desktop Alerts">Desktop Alerts</button>
+        <button class="btn btn-outline btn-sm" onclick="clearAllNotifications()">Clear All</button>
+      </div>
+    </div>
+    <div id="desktopNotifBanner" class="desktop-notif-banner" onclick="testDesktopNotification()">
+      <span id="desktopNotifBannerText">🔔 Click to enable real-time desktop alerts</span>
+    </div>
+    <div id="notifListContainer" class="notif-list-container"></div>
+  </div>
+
+  <script src="/static/js/main.js?v=24"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      loadAdminData();
+    });
+  </script>
+</body>
+
+</html>

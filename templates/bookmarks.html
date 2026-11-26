@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bookmarks - AI Doubt Solver</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css">
+  <link rel="stylesheet" href="/static/css/style.css?v=9">
+  <link rel="stylesheet" href="/static/css/doubt.css?v=9">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.4/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-left">
+      <button id="btnSidebarToggle" class="btn-icon hidden" title="Toggle Navigation" onclick="toggleSidebar()">☰</button>
+      <a href="/" class="logo-brand">
+        <div class="logo-icon">✦</div>
+        <span>AI <span class="text-brand">Doubt Solver</span></span>
+      </a>
+    </div>
+
+    <div class="header-center"></div>
+
+    <div class="header-right">
+      <button id="btnSettingsModal" class="btn-icon hidden" onclick="openModal('settingsModal')" title="System Configuration">⚙</button>
+      <button id="btnThemeToggle" class="btn-icon" onclick="toggleTheme()" title="Switch Light/Dark Mode">☾</button>
+      <button class="btn-icon" onclick="toggleNotifications()" title="Notifications">
+        🔔
+        <span id="notifDot" class="badge-dot hidden"></span>
+      </button>
+
+      <a href="/login" class="user-profile-badge" title="Profile Details">
+        <div id="userAvatar" class="user-avatar">A</div>
+        <div class="user-info-text">
+          <div id="userNameHeader" class="user-name-label">Student</div>
+          <div id="userRoleHeader" class="user-role-label">Student</div>
+        </div>
+      </a>
+      <button class="btn-icon" onclick="handleLogout()" title="Sign Out">↪</button>
+    </div>
+  </header>
+
+  <div class="app-body">
+    <aside id="appSidebar" class="app-sidebar">
+      <div>
+        <div id="studentNavGroup" class="sidebar-nav-group">
+          <div class="sidebar-title">Learning Center</div>
+          <a id="navItemDashboard" href="/" class="sidebar-link">
+            <span>⊞</span>
+            <span>Dashboard</span>
+          </a>
+          <a id="navItemAskDoubt" href="/ask" class="sidebar-link highlight">
+            <span>＋</span>
+            <span>Ask AI Doubt</span>
+          </a>
+          <a id="navItemHistory" href="/history" class="sidebar-link">
+            <span>◷</span>
+            <span>Doubt History</span>
+          </a>
+          <a id="navItemBookmarks" href="/bookmarks" class="sidebar-link active">
+            <span>🔖</span>
+            <span>Bookmarks</span>
+          </a>
+          <a id="navItemQuiz" href="/quiz" class="sidebar-link">
+            <span>✓</span>
+            <span>Practice & Quizzes</span>
+          </a>
+          <a id="navItemRecommendations" href="/recommendations" class="sidebar-link">
+            <span>◎</span>
+            <span>AI Study Path</span>
+          </a>
+        </div>
+      </div>
+    </aside>
+
+    <main class="app-main">
+      <div class="doubt-page-header">
+        <h1 class="doubt-page-title flex-row gap-sm">
+          <span class="text-amber">🔖</span>
+          <span>Saved Bookmarks & Favorites</span>
+        </h1>
+        <p class="doubt-page-desc">
+          Quickly revise key solutions and formulas you pinned for study.
+        </p>
+      </div>
+
+      <div class="card-panel">
+        <div id="bookmarksList" class="doubts-list"></div>
+      </div>
+    </main>
+  </div>
+
+  <div id="settingsModal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="flex-between mb-lg">
+        <div class="modal-title flex-row gap-sm">
+          <span class="text-brand">✦</span>
+          <span>AI Engine Configuration</span>
+        </div>
+        <button class="btn-icon" onclick="closeModal('settingsModal')">✕</button>
+      </div>
+      <form onsubmit="handleQuickSaveSettings(event)">
+        <div class="form-group">
+          <label class="form-label">API Key</label>
+          <input type="password" id="modalGrokKey" class="form-control font-mono" placeholder="gsk_... or xai-...">
+          <div class="form-hint text-muted">
+            Enter your API key to connect live reasoning models directly.
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Model Selection</label>
+          <select id="modalGrokModel" class="form-control">
+            <option value="openai/gpt-oss-120b">openai/gpt-oss-120b (High Reasoning Speed)</option>
+            <option value="qwen/qwen3.8-27b">qwen/qwen3.8-27b (Mathematical Logic)</option>
+            <option value="openai/gpt-oss-20b">openai/gpt-oss-20b (Fast Response)</option>
+            <option value="grok-2-latest">grok-2-latest (xAI Grok)</option>
+          </select>
+        </div>
+        <div class="flex-end gap-md">
+          <button type="button" class="btn btn-outline" onclick="closeModal('settingsModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Settings</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="notifDrawer" class="notif-drawer-box">
+    <div class="notif-header-row">
+      <div class="panel-title">Notifications</div>
+      <div class="flex-row gap-sm">
+        <button class="btn btn-outline btn-sm" onclick="testDesktopNotification()" title="Test Desktop Notification">Test Desktop Alert</button>
+        <button class="btn btn-outline btn-sm" onclick="clearAllNotifications()">Clear All</button>
+      </div>
+    </div>
+    <div id="notifListContainer" class="notif-list-container"></div>
+  </div>
+
+  <script src="/static/js/main.js?v=24"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      loadBookmarks();
+    });
+  </script>
+</body>
+</html>

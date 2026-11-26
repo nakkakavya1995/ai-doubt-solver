@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - AI Doubt Solver</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css">
+  <link rel="stylesheet" href="/static/css/style.css?v=9">
+  <link rel="stylesheet" href="/static/css/dashboard.css?v=9">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.4/dist/confetti.browser.min.js"></script>
+</head>
+<body class="page-student-dashboard">
+  <header class="app-header">
+    <div class="header-left">
+      <button id="btnSidebarToggle" class="btn-icon hidden" title="Toggle Navigation" onclick="toggleSidebar()">☰</button>
+      <a href="/" class="logo-brand">
+        <div class="logo-icon">✦</div>
+        <span>AI <span class="text-brand">Doubt Solver</span></span>
+      </a>
+    </div>
+
+    <div class="header-center"></div>
+
+    <div class="header-right">
+      <button id="btnSettingsModal" class="btn-icon hidden" onclick="openModal('settingsModal')" title="System Configuration">⚙</button>
+      <button id="btnThemeToggle" class="btn-icon" onclick="toggleTheme()" title="Switch Light/Dark Mode">☾</button>
+      <button class="btn-icon" onclick="toggleNotifications()" title="Notifications">
+        🔔
+        <span id="notifDot" class="badge-dot hidden"></span>
+      </button>
+
+      <a href="/login" class="user-profile-badge" title="Profile Details">
+        <div id="userAvatar" class="user-avatar">A</div>
+        <div class="user-info-text">
+          <div id="userNameHeader" class="user-name-label">Student</div>
+          <div id="userRoleHeader" class="user-role-label">Student</div>
+        </div>
+      </a>
+      <button class="btn-icon" onclick="handleLogout()" title="Sign Out">↪</button>
+    </div>
+  </header>
+
+  <div class="app-body">
+    <aside id="appSidebar" class="app-sidebar">
+      <div>
+        <div id="studentNavGroup" class="sidebar-nav-group">
+          <div class="sidebar-title">Learning Center</div>
+          <a id="navItemDashboard" href="/" class="sidebar-link active">
+            <span>⊞</span>
+            <span>Dashboard</span>
+          </a>
+          <a id="navItemAskDoubt" href="/ask" class="sidebar-link highlight">
+            <span>＋</span>
+            <span>Ask AI Doubt</span>
+          </a>
+          <a id="navItemHistory" href="/history" class="sidebar-link">
+            <span>◷</span>
+            <span>Doubt History</span>
+          </a>
+          <a id="navItemBookmarks" href="/bookmarks" class="sidebar-link">
+            <span>🔖</span>
+            <span>Bookmarks</span>
+          </a>
+          <a id="navItemQuiz" href="/quiz" class="sidebar-link">
+            <span>✓</span>
+            <span>Practice & Quizzes</span>
+          </a>
+          <a id="navItemRecommendations" href="/recommendations" class="sidebar-link">
+            <span>◎</span>
+            <span>AI Study Path</span>
+          </a>
+        </div>
+      </div>
+    </aside>
+
+    <main class="app-main">
+      <div class="hero-banner">
+        <div class="hero-content">
+          <div class="hero-badge">
+            <span>✦</span>
+            <span>AI Doubt Solver</span>
+          </div>
+          <h1 class="hero-title">Welcome back, <span id="heroUserName">Alex</span>!</h1>
+          <p class="hero-subtitle">
+            Have a question in Mathematics, Physics, Chemistry, or Code? Submit text, upload problem sheets, or attach PDFs for structured step-by-step guidance.
+          </p>
+          <div class="hero-actions">
+            <a href="/ask" class="btn btn-light">
+              <span>＋</span>
+              <span>Ask New Doubt</span>
+            </a>
+            <a href="/quiz" class="btn btn-outline dashboard-hero-btn-quiz">
+              <span>✓</span>
+              <span>Take Quick Quiz</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-header">
+            <span>Total Doubts Asked</span>
+            <span>📖</span>
+          </div>
+          <div id="statTotalDoubts" class="stat-value">0</div>
+          <div class="stat-desc">Across all subjects</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <span>Step-by-Step Solved</span>
+            <span>✓</span>
+          </div>
+          <div id="statSolvedDoubts" class="stat-value dashboard-stat-green">0</div>
+          <div class="stat-desc">100% resolution rate</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <span>Saved Bookmarks</span>
+            <span>🔖</span>
+          </div>
+          <div id="statBookmarkedDoubts" class="stat-value dashboard-stat-amber">0</div>
+          <div class="stat-desc">Saved for revision</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <span>Learning Streak</span>
+            <span>🔥</span>
+          </div>
+          <div class="stat-value dashboard-stat-purple">5 Days</div>
+          <div class="stat-desc">Consistent learner</div>
+        </div>
+      </div>
+
+      <div class="dashboard-columns">
+        <div class="card-panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span>◷</span>
+              <span>Recent Doubts & Solutions</span>
+            </div>
+            <a href="/history" class="panel-link">View all →</a>
+          </div>
+          <div id="dashboardDoubtsList" class="doubts-list"></div>
+        </div>
+
+        <div class="flex-col gap-lg">
+          <div class="card-panel dashboard-coding-card">
+            <div class="dashboard-coding-title">
+              <span>💻</span>
+              <span>Have a Coding Doubt?</span>
+            </div>
+            <p class="dashboard-coding-desc">
+              Paste your algorithm or buggy code snippet. AI Doubt Solver diagnoses infinite loops, off-by-one errors, and generates corrections.
+            </p>
+            <a href="/ask?type=code" class="btn btn-primary dashboard-coding-btn">
+              Launch Code Debugger →
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div id="aiStudyRecommendationsSection" class="card-panel dashboard-panel-padded">
+        <div class="dashboard-section-header">
+          <div>
+            <div class="dashboard-badge-pill">
+              <span>Adaptive Learning Engine</span>
+            </div>
+            <h2 class="dashboard-section-title">
+              AI Study Recommendations
+            </h2>
+            <p class="dashboard-section-desc">
+              Curated topics, practice exercises, and learning resources personalized based on your previously solved doubts.
+            </p>
+          </div>
+          <a href="/recommendations" class="panel-link">
+            View All Curriculum Paths →
+          </a>
+        </div>
+
+        <div id="dashboardRecommendationsList" class="flex-col gap-lg">
+          <div class="text-center text-muted">
+            Analyzing your doubt history to assemble recommendations...
+          </div>
+        </div>
+      </div>
+
+      <div id="learnedTopicsPracticeSection" class="card-panel dashboard-panel-padded">
+        <div class="dashboard-section-header">
+          <div>
+            <div class="dashboard-badge-pill">
+              <span>🎯</span>
+              <span>Topic Mastery Reinforcement</span>
+            </div>
+            <h2 class="dashboard-section-title">
+              Practice Questions for Learned Topics
+            </h2>
+            <p class="dashboard-section-desc">
+              Generate new practice questions on topics you have already learned by solving doubts.
+            </p>
+          </div>
+          <div class="flex-row flex-wrap gap-lg">
+            <div class="flex-col gap-xs">
+              <label for="selectLearnedTopic" class="form-label font-bold text-muted">Learned Topic</label>
+              <select id="selectLearnedTopic" class="form-input dashboard-topic-select">
+                <option value="">Loading your learned topics...</option>
+              </select>
+            </div>
+            <div class="flex-col gap-xs">
+              <label for="selectPracticeDifficulty" class="form-label font-bold text-muted">Difficulty</label>
+              <select id="selectPracticeDifficulty" class="form-input dashboard-diff-select">
+                <option value="simplified">Simplified</option>
+                <option value="intermediate" selected>Intermediate</option>
+                <option value="detailed">Detailed / Advanced</option>
+              </select>
+            </div>
+            <div class="flex-col flex-end">
+              <button id="btnGenerateDashboardPractice" type="button" class="btn btn-primary dashboard-btn-generate" onclick="generateDashboardPracticeQuestions(true)">
+                <span>⚡</span>
+                <span>Generate New Questions</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="dashboardPracticeContainer">
+          <div class="dashboard-practice-empty">
+            <div class="dashboard-practice-icon">📚</div>
+            <div class="dashboard-practice-title">Practice Topics You Have Learned</div>
+            <div class="dashboard-practice-desc">
+              Choose a topic you mastered from your doubts above to generate new practice problems with step-by-step guidance and answers.
+            </div>
+            <button type="button" class="btn btn-primary btn-lg" onclick="generateDashboardPracticeQuestions(true)">
+              <span>🎯</span>
+              <span>Practice Solved Topic Now</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="recommendationResourceModal" class="modal-backdrop">
+        <div class="modal-card dashboard-modal-resource">
+          <div class="flex-between mb-lg">
+            <div>
+              <div id="modalResourceBadge" class="dashboard-resource-badge"></div>
+              <h2 id="modalResourceTitle" class="modal-title mt-xs mb-0"></h2>
+            </div>
+            <button type="button" class="btn btn-outline" onclick="closeModal('recommendationResourceModal')">✕</button>
+          </div>
+          <div id="modalResourceContent" class="dashboard-resource-content"></div>
+          <div class="flex-end">
+            <button type="button" class="btn btn-primary" onclick="closeModal('recommendationResourceModal')">Done</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="settingsModal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="flex-between mb-lg">
+        <div class="modal-title flex-row gap-sm">
+          <span class="text-brand">✦</span>
+          <span>AI Engine Configuration</span>
+        </div>
+        <button class="btn-icon" onclick="closeModal('settingsModal')">✕</button>
+      </div>
+      <form onsubmit="handleQuickSaveSettings(event)">
+        <div class="form-group">
+          <label class="form-label">API Key</label>
+          <input type="password" id="modalGrokKey" class="form-control font-mono" placeholder="gsk_... or xai-...">
+          <div class="form-hint text-muted">
+            Enter your API key to connect live reasoning models directly.
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Model Selection</label>
+          <select id="modalGrokModel" class="form-control">
+            <option value="openai/gpt-oss-120b">openai/gpt-oss-120b (High Reasoning Speed)</option>
+            <option value="qwen/qwen3.8-27b">qwen/qwen3.8-27b (Mathematical Logic)</option>
+            <option value="openai/gpt-oss-20b">openai/gpt-oss-20b (Fast Response)</option>
+            <option value="grok-2-latest">grok-2-latest (xAI Grok)</option>
+          </select>
+        </div>
+        <div class="flex-end gap-md">
+          <button type="button" class="btn btn-outline" onclick="closeModal('settingsModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Settings</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="notifDrawer" class="notif-drawer-box">
+    <div class="notif-header-row">
+      <div class="panel-title">Notifications</div>
+      <div class="flex-row gap-sm">
+        <button class="btn btn-outline btn-sm" onclick="testDesktopNotification()" title="Test Desktop Notification">Test Desktop Alert</button>
+        <button class="btn btn-outline btn-sm" onclick="clearAllNotifications()">Clear All</button>
+      </div>
+    </div>
+    <div id="notifListContainer" class="notif-list-container"></div>
+  </div>
+
+  <script src="/static/js/main.js?v=24"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      loadDashboardData();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solution - AI Doubt Solver</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css">
+  <link rel="stylesheet" href="/static/css/style.css?v=9">
+  <link rel="stylesheet" href="/static/css/doubt.css?v=9">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.4/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-left">
+      <button id="btnSidebarToggle" class="btn-icon hidden" title="Toggle Navigation" onclick="toggleSidebar()">☰</button>
+      <a href="/" class="logo-brand">
+        <div class="logo-icon">✦</div>
+        <span>AI <span class="text-brand">Doubt Solver</span></span>
+      </a>
+    </div>
+
+    <div class="header-center"></div>
+
+    <div class="header-right">
+      <button id="btnSettingsModal" class="btn-icon hidden" onclick="openModal('settingsModal')" title="System Configuration">⚙</button>
+      <button id="btnThemeToggle" class="btn-icon" onclick="toggleTheme()" title="Switch Light/Dark Mode">☾</button>
+      <button class="btn-icon" onclick="toggleNotifications()" title="Notifications">
+        🔔
+        <span id="notifDot" class="badge-dot hidden"></span>
+      </button>
+
+      <a href="/login" class="user-profile-badge" title="Profile Details">
+        <div id="userAvatar" class="user-avatar">A</div>
+        <div class="user-info-text">
+          <div id="userNameHeader" class="user-name-label">Student</div>
+          <div id="userRoleHeader" class="user-role-label">Student</div>
+        </div>
+      </a>
+      <button class="btn-icon" onclick="handleLogout()" title="Sign Out">↪</button>
+    </div>
+  </header>
+
+  <div class="app-body">
+    <aside id="appSidebar" class="app-sidebar">
+      <div>
+        <div id="studentNavGroup" class="sidebar-nav-group">
+          <div class="sidebar-title">Learning Center</div>
+          <a id="navItemDashboard" href="/" class="sidebar-link">
+            <span>⊞</span>
+            <span>Dashboard</span>
+          </a>
+          <a id="navItemAskDoubt" href="/ask" class="sidebar-link highlight">
+            <span>＋</span>
+            <span>Ask AI Doubt</span>
+          </a>
+          <a id="navItemHistory" href="/history" class="sidebar-link">
+            <span>◷</span>
+            <span>Doubt History</span>
+          </a>
+          <a id="navItemBookmarks" href="/bookmarks" class="sidebar-link">
+            <span>🔖</span>
+            <span>Bookmarks</span>
+          </a>
+          <a id="navItemQuiz" href="/quiz" class="sidebar-link">
+            <span>✓</span>
+            <span>Practice & Quizzes</span>
+          </a>
+          <a id="navItemRecommendations" href="/recommendations" class="sidebar-link">
+            <span>◎</span>
+            <span>AI Study Path</span>
+          </a>
+        </div>
+      </div>
+    </aside>
+
+    <main class="app-main">
+      <div class="doubt-detail-topbar">
+        <a href="/history" class="btn btn-outline btn-md">← Back to Doubts</a>
+        <div class="doubt-detail-actions">
+          <button id="btnDetailBookmark" class="btn btn-outline btn-md" onclick="toggleDetailBookmark()">Save Bookmark</button>
+          <button class="btn btn-outline btn-md" onclick="window.print()">🖶 Print / PDF</button>
+        </div>
+      </div>
+
+      <div class="card-panel detail-card-panel">
+        <div class="doubt-meta-row">
+          <span id="detailSubjectBadge" class="badge badge-subject">Mathematics</span>
+          <span id="detailLevelBadge" class="badge badge-level">Intermediate</span>
+          <span id="detailVerifiedBadge" class="badge badge-verified hidden">✓ Teacher Verified</span>
+          <span id="detailDate" class="text-muted ml-auto font-sm"></span>
+        </div>
+        <h1 id="detailTitle" class="detail-title"></h1>
+        <div class="detail-question-box">
+          <p id="detailQuestion" class="detail-question-text"></p>
+          <div id="detailDocWrapper" class="detail-doc-box hidden">
+            <div class="flex-row gap-sm">
+              <span class="detail-doc-icon">📕</span>
+              <div>
+                <div id="detailDocName" class="font-bold">document.pdf</div>
+                <div class="text-muted font-sm">Attached Academic PDF Document</div>
+              </div>
+            </div>
+          </div>
+          <div id="detailImageWrapper" class="detail-img-box hidden">
+            <img id="detailImage" class="detail-img" src="" alt="Doubt attachment">
+          </div>
+          <div id="detailCodeWrapper" class="hidden">
+            <div class="code-viewer-box">
+              <div class="code-viewer-header">
+                <span id="detailCodeLang">PYTHON</span>
+                <button type="button" class="btn detail-btn-code-copy" onclick="copyCode('detailCodeBlock')">Copy</button>
+              </div>
+              <pre id="detailCodeBlock" class="code-viewer-pre"></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section-header">
+        <div class="detail-section-title">
+          <span class="text-brand">✦</span>
+          <span>AI Step-by-Step Solution</span>
+        </div>
+        <button class="btn btn-outline detail-btn-practice" onclick="generatePracticeForCurrentDoubt()">
+          📖 Practice Similar Questions
+        </button>
+      </div>
+
+      <div class="card-panel detail-sol-panel">
+        <div id="solutionSummaryBox" class="solution-callout summary">
+          <div class="callout-label text-brand">Core Principle & Concept</div>
+          <div id="solutionSummary" class="font-semibold line-relaxed"></div>
+        </div>
+
+        <div id="solutionStepsContainer"></div>
+
+        <div id="solutionCodeBox" class="mt-md hidden">
+          <div class="text-green font-bold text-uppercase mb-xs font-sm">
+            Corrected Implementation
+          </div>
+          <div class="code-viewer-box">
+            <div class="code-viewer-header">
+              <span>BUG FIX CORRECTION</span>
+              <button type="button" class="btn detail-btn-code-copy-sm" onclick="copyCode('solutionCodeBlock')">Copy</button>
+            </div>
+            <pre id="solutionCodeBlock" class="code-viewer-pre"></pre>
+          </div>
+        </div>
+
+        <div id="solutionFinalBox" class="solution-callout final">
+          <div class="callout-label text-green">Final Verified Answer</div>
+          <div id="solutionFinal" class="font-bold"></div>
+        </div>
+
+        <div id="solutionTakeawayBox" class="solution-callout takeaway">
+          <div class="callout-label text-amber">Key Exam Takeaway & Rule</div>
+          <div id="solutionTakeaway" class="font-semibold line-relaxed"></div>
+        </div>
+      </div>
+
+      <div id="practiceQuestionsPanel" class="card-panel detail-practice-panel hidden">
+        <div class="flex-between mb-md">
+          <div class="detail-panel-title">Generated Practice Questions</div>
+          <button class="btn btn-outline btn-sm" onclick="hidePracticePanel()">Hide</button>
+        </div>
+        <div id="practiceQuestionsList" class="flex-col gap-lg"></div>
+      </div>
+
+      <div id="teacherReviewBox" class="card-panel detail-teacher-box hidden">
+        <div class="detail-teacher-badge">
+          <span>👨‍🏫</span>
+          <span id="teacherReviewHeading">Teacher Verification</span>
+        </div>
+        <p id="teacherReviewText" class="detail-teacher-text"></p>
+      </div>
+
+      <div id="teacherActionForm" class="card-panel detail-teacher-box hidden">
+        <div class="detail-panel-title text-green mb-xs">
+          Instructor Review & Endorsement
+        </div>
+        <p class="text-muted font-sm mb-sm">
+          Verify this AI-generated solution and leave annotations for the student.
+        </p>
+        <div class="form-group">
+          <textarea id="teacherAnnotationInput" class="form-control" rows="3" placeholder="Add verified educator feedback..."></textarea>
+        </div>
+        <button class="btn btn-primary detail-teacher-approve-btn" onclick="submitTeacherAnnotation()">
+          Approve & Publish Verification
+        </button>
+      </div>
+
+      <div class="card-panel detail-followup-panel">
+        <div class="detail-section-title font-lg mb-md">
+          <span>💬</span>
+          <span>Interactive Follow-Up Discussion</span>
+        </div>
+        <div id="followUpsList" class="detail-followups-list"></div>
+        <form onsubmit="handleSendFollowUp(event)" class="flex-row gap-md">
+          <input type="text" id="followUpInput" class="form-control" placeholder="Ask a follow-up question (e.g. 'What if x approaches infinity?')...">
+          <button id="btnSendFollowUp" type="submit" class="btn btn-primary whitespace-nowrap">Send Question</button>
+        </form>
+      </div>
+
+      <div class="card-panel detail-rating-panel">
+        <div class="detail-panel-title mb-md">Solution Rating & Feedback</div>
+        <form onsubmit="handleSubmitFeedback(event)">
+          <div class="flex-row gap-md mb-md">
+            <span class="font-semibold font-sm">Rate solution:</span>
+            <div id="starRatingGroup" class="detail-star-group">
+              <span onclick="setRating(1)">★</span>
+              <span onclick="setRating(2)">★</span>
+              <span onclick="setRating(3)">★</span>
+              <span onclick="setRating(4)">★</span>
+              <span onclick="setRating(5)">★</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <textarea id="feedbackComment" class="form-control" rows="2" placeholder="Optional comments on how the explanation could be improved..."></textarea>
+          </div>
+          <div class="flex-between flex-wrap gap-md">
+            <label class="detail-check-label">
+              <input type="checkbox" id="checkReportIssue">
+              <span>Request teacher clarification / review</span>
+            </label>
+            <button type="submit" class="btn btn-outline btn-sm">Submit Feedback</button>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <div id="settingsModal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="flex-between mb-lg">
+        <div class="modal-title flex-row gap-sm">
+          <span class="text-brand">✦</span>
+          <span>AI Engine Configuration</span>
+        </div>
+        <button class="btn-icon" onclick="closeModal('settingsModal')">✕</button>
+      </div>
+      <form onsubmit="handleQuickSaveSettings(event)">
+        <div class="form-group">
+          <label class="form-label">API Key</label>
+          <input type="password" id="modalGrokKey" class="form-control font-mono" placeholder="gsk_... or xai-...">
+          <div class="form-hint text-muted">
+            Enter your API key to connect live reasoning models directly.
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Model Selection</label>
+          <select id="modalGrokModel" class="form-control">
+            <option value="openai/gpt-oss-120b">openai/gpt-oss-120b (High Reasoning Speed)</option>
+            <option value="qwen/qwen3.8-27b">qwen/qwen3.8-27b (Mathematical Logic)</option>
+            <option value="openai/gpt-oss-20b">openai/gpt-oss-20b (Fast Response)</option>
+            <option value="grok-2-latest">grok-2-latest (xAI Grok)</option>
+          </select>
+        </div>
+        <div class="flex-end gap-md">
+          <button type="button" class="btn btn-outline" onclick="closeModal('settingsModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Settings</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="notifDrawer" class="notif-drawer-box">
+    <div class="notif-header-row">
+      <div class="panel-title">Notifications</div>
+      <div class="flex-row gap-sm">
+        <button class="btn btn-outline btn-sm" onclick="testDesktopNotification()" title="Test Desktop Notification">Test Desktop Alert</button>
+        <button class="btn btn-outline btn-sm" onclick="clearAllNotifications()">Clear All</button>
+      </div>
+    </div>
+    <div id="notifListContainer" class="notif-list-container"></div>
+  </div>
+
+  <script src="/static/js/main.js?v=24"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const doubtId = window.location.pathname.split("/").filter(Boolean).pop();
+      if (doubtId && doubtId !== "doubt") {
+        loadDoubtDetail(doubtId);
+      }
+    });
+  </script>
+</body>
+</html>
