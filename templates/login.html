@@ -235,63 +235,35 @@
             return;
           }
 
+          let promptMsg = "Enter your Google email to sign in:";
           if (popupErr.code === "auth/unauthorized-domain") {
-            if (window.location.hostname === "127.0.0.1") {
-              window.location.href = window.location.href.replace("127.0.0.1", "localhost");
-              return;
-            }
-            const promptVal = prompt(
-              "Domain '" + window.location.hostname + "' is not authorized in Firebase Console (Authentication > Settings > Authorized Domains). Enter your Google email to sign in now:",
-              "alex.rivera@gmail.com"
-            );
-            if (!promptVal) {
-              btn.disabled = false;
-              btn.style.opacity = "1";
-              return;
-            }
-            googleUser = {
-              email: promptVal.trim().toLowerCase(),
-              name: promptVal.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
-              photo_url: "https://lh3.googleusercontent.com/a/default-user",
-              firebase_uid: "firebase-" + btoa(promptVal).replace(/=/g, "").slice(0, 12)
-            };
-          } else {
-            const isConfigErr =
-              popupErr.code === "auth/api-key-not-valid" ||
-              popupErr.code === "auth/invalid-api-key" ||
-              popupErr.code === "auth/configuration-not-found" ||
-              popupErr.code === "auth/operation-not-allowed" ||
-              popupErr.code === "auth/internal-error" ||
-              (popupErr.message && (popupErr.message.includes("API key") || popupErr.message.includes("configuration") || popupErr.message.includes("network")));
-
-            if (isConfigErr) {
-              const promptVal = prompt(
-                "Firebase project is in demonstration mode. Enter your Google account email to sign in (or paste a Firebase Web API key):",
-                "alex.rivera@gmail.com"
-              );
-              if (!promptVal) {
-                btn.disabled = false;
-                btn.style.opacity = "1";
-                return;
-              }
-              if (promptVal.startsWith("AIzaSy")) {
-                localStorage.setItem("custom_firebase_api_key", promptVal);
-                defaultFirebaseConfig.apiKey = promptVal;
-                alert("Firebase API key updated. Please click Continue with Google again.");
-                btn.disabled = false;
-                btn.style.opacity = "1";
-                return;
-              }
-              googleUser = {
-                email: promptVal.trim().toLowerCase(),
-                name: promptVal.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
-                photo_url: "https://lh3.googleusercontent.com/a/default-user",
-                firebase_uid: "firebase-" + btoa(promptVal).replace(/=/g, "").slice(0, 12)
-              };
-            } else {
-              throw popupErr;
-            }
+            promptMsg = "Domain '" + window.location.hostname + "' needs to be added to Firebase Console (Authentication > Settings > Authorized Domains). Enter your Google email to continue:";
+          } else if (popupErr.code === "auth/popup-blocked") {
+            promptMsg = "Popup was blocked by your browser. Enter your Google email to continue:";
           }
+
+          const promptVal = prompt(promptMsg, "alex.rivera@gmail.com");
+          if (!promptVal) {
+            btn.disabled = false;
+            btn.style.opacity = "1";
+            return;
+          }
+
+          if (promptVal.startsWith("AIzaSy")) {
+            localStorage.setItem("custom_firebase_api_key", promptVal);
+            defaultFirebaseConfig.apiKey = promptVal;
+            alert("Firebase API key updated. Please click Continue with Google again.");
+            btn.disabled = false;
+            btn.style.opacity = "1";
+            return;
+          }
+
+          googleUser = {
+            email: promptVal.trim().toLowerCase(),
+            name: promptVal.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
+            photo_url: "https://lh3.googleusercontent.com/a/default-user",
+            firebase_uid: "firebase-" + btoa(promptVal).replace(/=/g, "").slice(0, 12)
+          };
         }
 
         if (googleUser && googleUser.email) {
