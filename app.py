@@ -33,7 +33,10 @@ app.register_blueprint(notifications_bp)
 
 @app.after_request
 def set_security_headers(response):
-    response.headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups"
+    response.headers["Cross-Origin-Opener-Policy"] = "unsafe-none"
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
     return response
 
 if __name__ == "__main__":

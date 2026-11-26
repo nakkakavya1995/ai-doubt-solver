@@ -21,14 +21,14 @@ var state = window.state = window.state || {
 
 (function() {
   const scripts = [
-    "/static/js/utils.js?v=26",
-    "/static/js/auth.js?v=26",
-    "/static/js/notifications.js?v=26",
-    "/static/js/doubts.js?v=26",
-    "/static/js/dashboard.js?v=26",
-    "/static/js/quiz.js?v=26",
-    "/static/js/teacher.js?v=26",
-    "/static/js/admin.js?v=26"
+    "/static/js/utils.js?v=28",
+    "/static/js/auth.js?v=28",
+    "/static/js/notifications.js?v=28",
+    "/static/js/doubts.js?v=28",
+    "/static/js/dashboard.js?v=28",
+    "/static/js/quiz.js?v=28",
+    "/static/js/teacher.js?v=28",
+    "/static/js/admin.js?v=28"
   ];
   for (let i = 0; i < scripts.length; i++) {
     document.write('<script src="' + scripts[i] + '"><\/script>');
