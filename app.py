@@ -17,7 +17,10 @@ app.config["TEMPLATES_AUTO_RELOAD"] = True
 app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024
 CORS(app)
 
-init_db()
+try:
+    init_db()
+except Exception as e:
+    pass
 
 app.register_blueprint(pages_bp)
 app.register_blueprint(auth_bp)
