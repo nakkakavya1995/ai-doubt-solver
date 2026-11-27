@@ -166,13 +166,6 @@ class SafeCollection:
         return True
 
     def find(self, query=None, projection=None):
-        if is_mongo_alive():
-            try:
-                if projection:
-                    return self.raw_col.find(query or {}, projection)
-                return self.raw_col.find(query or {})
-            except Exception:
-                pass
         query = query or {}
         matched = []
         conn = get_sqlite_conn()
@@ -195,16 +188,6 @@ class SafeCollection:
         return MockCursor(matched)
 
     def find_one(self, query=None, projection=None):
-        if is_mongo_alive():
-            try:
-                if projection:
-                    res = self.raw_col.find_one(query or {}, projection)
-                else:
-                    res = self.raw_col.find_one(query or {})
-                if res is not None:
-                    return res
-            except Exception:
-                pass
         query = query or {}
         conn = get_sqlite_conn()
         try:
@@ -226,11 +209,6 @@ class SafeCollection:
         return None
 
     def count_documents(self, query=None):
-        if is_mongo_alive():
-            try:
-                return self.raw_col.count_documents(query or {})
-            except Exception:
-                pass
         query = query or {}
         if not query:
             conn = get_sqlite_conn()
