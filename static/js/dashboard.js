@@ -2,20 +2,6 @@ var state = window.state = window.state || {};
 
 async function loadDashboardData() {
   try {
-    const res = await fetch(`/api/doubts?user_id=${state.user.id}&role=${state.user.role}`);
-    const doubts = await res.json();
-    state.doubts = doubts;
-
-    document.getElementById("statTotalDoubts").textContent = doubts.length;
-    document.getElementById("statSolvedDoubts").textContent = doubts.filter(d => d.status === "solved" || d.status === "verified").length;
-    document.getElementById("statBookmarkedDoubts").textContent = doubts.filter(d => d.bookmarked).length;
-
-    renderDoubtsList("dashboardDoubtsList", doubts.slice(0, 5));
-
-    const recRes = await fetch(`/api/quiz/recommendations?user_id=${state.user.id}`);
-    const recData = await recRes.json();
-    renderDashboardRecommendations(recData.recommendations || []);
-
     const urlParams = new URLSearchParams(window.location.search);
     let pendingDoubtId = urlParams.get("practice_doubt_id");
     let pendingTopic = urlParams.get("practice_topic");
@@ -31,12 +17,39 @@ async function loadDashboardData() {
       } catch (e) { }
     }
 
-    await loadLearnedTopicsForPractice(pendingDoubtId || pendingTopic);
+    const doubtsPromise = fetch(`/api/doubts?user_id=${state.user.id}&role=${state.user.role}`)
+      .then(r => r.json())
+      .then(doubts => {
+        if (Array.isArray(doubts)) {
+          state.doubts = doubts;
+          const totalEl = document.getElementById("statTotalDoubts");
+          const solvedEl = document.getElementById("statSolvedDoubts");
+          const bookmarkedEl = document.getElementById("statBookmarkedDoubts");
+          if (totalEl) totalEl.textContent = doubts.length;
+          if (solvedEl) solvedEl.textContent = doubts.filter(d => d.status === "solved" || d.status === "verified").length;
+          if (bookmarkedEl) bookmarkedEl.textContent = doubts.filter(d => d.bookmarked).length;
+          renderDoubtsList("dashboardDoubtsList", doubts.slice(0, 5));
+        }
+      })
+      .catch(e => { });
+
+    const recsPromise = fetch(`/api/quiz/recommendations?user_id=${state.user.id}`)
+      .then(r => r.json())
+      .then(recData => {
+        if (recData && recData.recommendations) {
+          renderDashboardRecommendations(recData.recommendations || []);
+        }
+      })
+      .catch(e => { });
+
+    const topicsPromise = loadLearnedTopicsForPractice(pendingDoubtId || pendingTopic);
+
+    await Promise.allSettled([doubtsPromise, recsPromise, topicsPromise]);
 
     if (pendingDoubtId || pendingTopic) {
       setTimeout(() => {
         practiceTopicFromDoubt(pendingDoubtId, pendingTopic || "Learned Topic", pendingSubject || "Mathematics");
-      }, 300);
+      }, 150);
     }
   } catch (err) {
     console.error(err);

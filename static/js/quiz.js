@@ -43,8 +43,7 @@ function showQuizTab(tabName) {
 }
 
 async function initQuizPage() {
-  await loadQuizLearnedTopics();
-  await loadPreviousQuizzes();
+  await Promise.allSettled([loadQuizLearnedTopics(), loadPreviousQuizzes()]);
 
   const params = new URLSearchParams(window.location.search);
   const topicParam = params.get("topic");

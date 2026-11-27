@@ -1,4 +1,4 @@
-import os, uuid, re, time
+import os, uuid, re, time, json, sqlite3
 from datetime import datetime
 from pymongo import MongoClient
 from dotenv import load_dotenv
@@ -9,14 +9,32 @@ MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
 client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=400, connectTimeoutMS=400, socketTimeoutMS=400)
 raw_db = client["doubt_solver_db"]
 
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "doubt_solver.db")
+
+def get_sqlite_conn():
+    conn = sqlite3.connect(DB_PATH, timeout=10.0, check_same_thread=False)
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA synchronous=NORMAL")
+    conn.execute("PRAGMA busy_timeout=5000")
+    return conn
+
 _mongo_ok = None
 _last_check = 0
 
 def is_mongo_alive():
     global _mongo_ok, _last_check
     now = time.time()
-    if _mongo_ok is not None and (now - _last_check < 60):
+    if _mongo_ok is not None and (now - _last_check < 300):
         return _mongo_ok
+    if "localhost" in MONGO_URI or "127.0.0.1" in MONGO_URI:
+        import socket
+        try:
+            s = socket.create_connection(("127.0.0.1", 27017), timeout=0.05)
+            s.close()
+        except Exception:
+            _mongo_ok = False
+            _last_check = now
+            return False
     try:
         client.admin.command("ping")
         _mongo_ok = True
@@ -24,6 +42,19 @@ def is_mongo_alive():
         _mongo_ok = False
     _last_check = now
     return _mongo_ok
+
+class InsertResult:
+    def __init__(self, inserted_id):
+        self.inserted_id = inserted_id
+
+class UpdateResult:
+    def __init__(self, matched_count, modified_count):
+        self.matched_count = matched_count
+        self.modified_count = modified_count
+
+class DeleteResult:
+    def __init__(self, deleted_count):
+        self.deleted_count = deleted_count
 
 class MockCursor:
     def __init__(self, docs):
@@ -63,13 +94,27 @@ class MockCursor:
 class SafeCollection:
     def __init__(self, raw_col, seed_docs=None):
         self.raw_col = raw_col
-        self.docs = []
-        if seed_docs:
-            for d in seed_docs:
-                doc_copy = dict(d)
-                if "id" not in doc_copy:
-                    doc_copy["id"] = str(uuid.uuid4().hex[:8])
-                self.docs.append(doc_copy)
+        self.table_name = f"col_{raw_col.name}"
+        self._init_table(seed_docs)
+
+    def _init_table(self, seed_docs):
+        conn = get_sqlite_conn()
+        try:
+            conn.execute(f"CREATE TABLE IF NOT EXISTS {self.table_name} (id TEXT PRIMARY KEY, data TEXT)")
+            cur = conn.execute(f"SELECT COUNT(*) FROM {self.table_name}")
+            count = cur.fetchone()[0]
+            if count == 0 and seed_docs:
+                for d in seed_docs:
+                    doc_copy = dict(d)
+                    if "id" not in doc_copy:
+                        doc_copy["id"] = str(uuid.uuid4().hex[:8])
+                    conn.execute(
+                        f"INSERT OR REPLACE INTO {self.table_name} (id, data) VALUES (?, ?)",
+                        (str(doc_copy["id"]), json.dumps(doc_copy, default=str))
+                    )
+                conn.commit()
+        finally:
+            conn.close()
 
     def _get_val(self, doc, path):
         parts = path.split(".")
@@ -113,10 +158,10 @@ class SafeCollection:
                             return False
             else:
                 if k == "id" or k == "_id":
-                    id_match = (doc.get("id") == v) or (str(doc.get("_id", "")) == str(v))
+                    id_match = (str(doc.get("id")) == str(v)) or (str(doc.get("_id", "")) == str(v))
                     if not id_match:
                         return False
-                elif doc_val != v:
+                elif str(doc_val) != str(v) and doc_val != v:
                     return False
         return True
 
@@ -130,14 +175,23 @@ class SafeCollection:
                 pass
         query = query or {}
         matched = []
-        for d in self.docs:
-            if self._matches(d, query):
-                doc_copy = dict(d)
-                if projection and isinstance(projection, dict):
-                    for pk, pv in projection.items():
-                        if pv == 0:
-                            doc_copy.pop(pk, None)
-                matched.append(doc_copy)
+        conn = get_sqlite_conn()
+        try:
+            cur = conn.execute(f"SELECT data FROM {self.table_name}")
+            rows = cur.fetchall()
+            for row in rows:
+                try:
+                    d = json.loads(row[0])
+                except Exception:
+                    continue
+                if self._matches(d, query):
+                    if projection and isinstance(projection, dict):
+                        for pk, pv in projection.items():
+                            if pv == 0:
+                                d.pop(pk, None)
+                    matched.append(d)
+        finally:
+            conn.close()
         return MockCursor(matched)
 
     def find_one(self, query=None, projection=None):
@@ -152,14 +206,23 @@ class SafeCollection:
             except Exception:
                 pass
         query = query or {}
-        for d in self.docs:
-            if self._matches(d, query):
-                doc_copy = dict(d)
-                if projection and isinstance(projection, dict):
-                    for pk, pv in projection.items():
-                        if pv == 0:
-                            doc_copy.pop(pk, None)
-                return doc_copy
+        conn = get_sqlite_conn()
+        try:
+            cur = conn.execute(f"SELECT data FROM {self.table_name}")
+            rows = cur.fetchall()
+            for row in rows:
+                try:
+                    d = json.loads(row[0])
+                except Exception:
+                    continue
+                if self._matches(d, query):
+                    if projection and isinstance(projection, dict):
+                        for pk, pv in projection.items():
+                            if pv == 0:
+                                d.pop(pk, None)
+                    return d
+        finally:
+            conn.close()
         return None
 
     def count_documents(self, query=None):
@@ -169,21 +232,48 @@ class SafeCollection:
             except Exception:
                 pass
         query = query or {}
-        return sum(1 for d in self.docs if self._matches(d, query))
+        if not query:
+            conn = get_sqlite_conn()
+            try:
+                cur = conn.execute(f"SELECT COUNT(*) FROM {self.table_name}")
+                return cur.fetchone()[0]
+            finally:
+                conn.close()
+        matched_count = 0
+        conn = get_sqlite_conn()
+        try:
+            cur = conn.execute(f"SELECT data FROM {self.table_name}")
+            rows = cur.fetchall()
+            for row in rows:
+                try:
+                    d = json.loads(row[0])
+                except Exception:
+                    continue
+                if self._matches(d, query):
+                    matched_count += 1
+        finally:
+            conn.close()
+        return matched_count
 
     def insert_one(self, doc):
         d = dict(doc)
         if "id" not in d:
             d["id"] = f"id-{uuid.uuid4().hex[:8]}"
-        self.docs.append(d)
+        conn = get_sqlite_conn()
+        try:
+            conn.execute(
+                f"INSERT OR REPLACE INTO {self.table_name} (id, data) VALUES (?, ?)",
+                (str(d["id"]), json.dumps(d, default=str))
+            )
+            conn.commit()
+        finally:
+            conn.close()
         if is_mongo_alive():
             try:
                 return self.raw_col.insert_one(dict(doc))
             except Exception:
                 pass
-        class Res:
-            inserted_id = d["id"]
-        return Res()
+        return InsertResult(d["id"])
 
     def insert_many(self, doc_list):
         for doc in doc_list:
@@ -191,61 +281,121 @@ class SafeCollection:
 
     def update_one(self, query, update, upsert=False, **kwargs):
         matched = False
-        for doc in self.docs:
-            if self._matches(doc, query):
-                matched = True
+        conn = get_sqlite_conn()
+        try:
+            cur = conn.execute(f"SELECT id, data FROM {self.table_name}")
+            rows = cur.fetchall()
+            for row in rows:
+                doc_id = row[0]
+                try:
+                    d = json.loads(row[1])
+                except Exception:
+                    continue
+                if self._matches(d, query):
+                    matched = True
+                    if "$set" in update:
+                        for k, v in update["$set"].items():
+                            parts = k.split(".")
+                            curr = d
+                            for p in parts[:-1]:
+                                curr = curr.setdefault(p, {})
+                            curr[parts[-1]] = v
+                    if "$push" in update:
+                        for k, v in update["$push"].items():
+                            arr = d.setdefault(k, [])
+                            if isinstance(arr, list):
+                                if isinstance(v, dict) and "$each" in v:
+                                    arr.extend(v["$each"])
+                                else:
+                                    arr.append(v)
+                    conn.execute(
+                        f"UPDATE {self.table_name} SET data = ? WHERE id = ?",
+                        (json.dumps(d, default=str), str(doc_id))
+                    )
+                    conn.commit()
+                    break
+            if not matched and upsert:
+                new_doc = dict(query)
                 if "$set" in update:
-                    for k, v in update["$set"].items():
-                        parts = k.split(".")
-                        curr = doc
-                        for p in parts[:-1]:
-                            curr = curr.setdefault(p, {})
-                        curr[parts[-1]] = v
-                if "$push" in update:
-                    for k, v in update["$push"].items():
-                        arr = doc.setdefault(k, [])
-                        if isinstance(arr, list):
-                            if isinstance(v, dict) and "$each" in v:
-                                arr.extend(v["$each"])
-                            else:
-                                arr.append(v)
-                break
-        if not matched and upsert:
-            new_doc = dict(query)
-            if "$set" in update:
-                new_doc.update(update["$set"])
-            self.insert_one(new_doc)
+                    new_doc.update(update["$set"])
+                if "id" not in new_doc:
+                    new_doc["id"] = f"id-{uuid.uuid4().hex[:8]}"
+                conn.execute(
+                    f"INSERT OR REPLACE INTO {self.table_name} (id, data) VALUES (?, ?)",
+                    (str(new_doc["id"]), json.dumps(new_doc, default=str))
+                )
+                conn.commit()
+                matched = True
+        finally:
+            conn.close()
         if is_mongo_alive():
             try:
                 return self.raw_col.update_one(query, update, upsert=upsert, **kwargs)
             except Exception:
                 pass
-        return True
+        return UpdateResult(1 if matched else 0, 1 if matched else 0)
 
     def update_many(self, query, update, upsert=False, **kwargs):
-        for doc in self.docs:
-            if self._matches(doc, query):
-                if "$set" in update:
-                    for k, v in update["$set"].items():
-                        doc[k] = v
+        mod_count = 0
+        conn = get_sqlite_conn()
+        try:
+            cur = conn.execute(f"SELECT id, data FROM {self.table_name}")
+            rows = cur.fetchall()
+            for row in rows:
+                doc_id = row[0]
+                try:
+                    d = json.loads(row[1])
+                except Exception:
+                    continue
+                if self._matches(d, query):
+                    if "$set" in update:
+                        for k, v in update["$set"].items():
+                            parts = k.split(".")
+                            curr = d
+                            for p in parts[:-1]:
+                                curr = curr.setdefault(p, {})
+                            curr[parts[-1]] = v
+                    conn.execute(
+                        f"UPDATE {self.table_name} SET data = ? WHERE id = ?",
+                        (json.dumps(d, default=str), str(doc_id))
+                    )
+                    mod_count += 1
+            if mod_count > 0:
+                conn.commit()
+        finally:
+            conn.close()
         if is_mongo_alive():
             try:
                 return self.raw_col.update_many(query, update, upsert=upsert, **kwargs)
             except Exception:
                 pass
-        return True
+        return UpdateResult(mod_count, mod_count)
 
     def delete_one(self, query):
-        for idx, doc in enumerate(self.docs):
-            if self._matches(doc, query):
-                del self.docs[idx]
-                break
+        del_count = 0
+        conn = get_sqlite_conn()
+        try:
+            cur = conn.execute(f"SELECT id, data FROM {self.table_name}")
+            rows = cur.fetchall()
+            for row in rows:
+                doc_id = row[0]
+                try:
+                    d = json.loads(row[1])
+                except Exception:
+                    continue
+                if self._matches(d, query):
+                    conn.execute(f"DELETE FROM {self.table_name} WHERE id = ?", (str(doc_id),))
+                    conn.commit()
+                    del_count = 1
+                    break
+        finally:
+            conn.close()
         if is_mongo_alive():
             try:
                 return self.raw_col.delete_one(query)
             except Exception:
                 pass
-        return True
+        return DeleteResult(del_count)
 
 def clean_doc(doc):
     if doc is None:
