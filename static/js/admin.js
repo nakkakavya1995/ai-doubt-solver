@@ -544,11 +544,8 @@ async function loadSubjectsForSelects() {
   const quizSub = document.getElementById("quizSubject");
   const filterSub = document.getElementById("filterSubject");
   if (!doubtSub && !quizSub && !filterSub) return;
-  try {
-    const res = await fetch("/api/admin/subjects");
-    if (!res.ok) return;
-    const subjects = await res.json();
-    if (!subjects || subjects.length === 0) return;
+
+  function populate(subjects) {
     const opts = subjects.map(s => `<option value="${escapeHtml(s.name)}">${escapeHtml(s.name)}</option>`).join("");
     if (doubtSub) {
       const cur = doubtSub.value;
@@ -565,6 +562,26 @@ async function loadSubjectsForSelects() {
       filterSub.innerHTML = `<option value="All">All Subjects</option>` + opts;
       if (cur) filterSub.value = cur;
     }
+  }
+
+  const cached = sessionStorage.getItem("cached_subjects");
+  if (cached) {
+    try {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        populate(parsed);
+        return;
+      }
+    } catch (e) { }
+  }
+
+  try {
+    const res = await fetch("/api/admin/subjects");
+    if (!res.ok) return;
+    const subjects = await res.json();
+    if (!subjects || subjects.length === 0) return;
+    sessionStorage.setItem("cached_subjects", JSON.stringify(subjects));
+    populate(subjects);
   } catch (e) { }
 }
 

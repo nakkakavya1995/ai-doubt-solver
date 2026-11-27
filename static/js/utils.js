@@ -194,3 +194,25 @@ window.parseUtcDate = parseUtcDate;
 window.formatLocalTime = formatLocalTime;
 window.formatLocalDate = formatLocalDate;
 window.formatLocalDateTime = formatLocalDateTime;
+
+document.addEventListener("mouseover", (e) => {
+  const a = e.target.closest("a");
+  if (a && a.href && a.origin === window.location.origin && !a.getAttribute("data-prefetched")) {
+    a.setAttribute("data-prefetched", "true");
+    const link = document.createElement("link");
+    link.rel = "prefetch";
+    link.href = a.href;
+    document.head.appendChild(link);
+  }
+});
+
+document.addEventListener("touchstart", (e) => {
+  const a = e.target.closest("a");
+  if (a && a.href && a.origin === window.location.origin && !a.getAttribute("data-prefetched")) {
+    a.setAttribute("data-prefetched", "true");
+    const link = document.createElement("link");
+    link.rel = "prefetch";
+    link.href = a.href;
+    document.head.appendChild(link);
+  }
+}, { passive: true });

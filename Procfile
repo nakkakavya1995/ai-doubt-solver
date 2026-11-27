@@ -1,1 +1,1 @@
-web: gunicorn --worker-class=gthread --workers=2 --threads=8 --timeout=30 app:app
+web: gunicorn --worker-class=gthread --workers=1 --threads=16 --timeout=60 --preload app:app

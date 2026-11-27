@@ -1,5 +1,5 @@
 import os
-from flask import Flask
+from flask import Flask, request
 from flask_cors import CORS
 from db import init_db
 from routes.pages import pages_bp
@@ -34,9 +34,12 @@ app.register_blueprint(notifications_bp)
 @app.after_request
 def set_security_headers(response):
     response.headers["Cross-Origin-Opener-Policy"] = "unsafe-none"
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    response.headers["Pragma"] = "no-cache"
-    response.headers["Expires"] = "0"
+    if request.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    else:
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
     return response
 
 if __name__ == "__main__":
