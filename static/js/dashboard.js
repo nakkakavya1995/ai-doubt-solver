@@ -17,11 +17,36 @@ async function loadDashboardData() {
       } catch (e) { }
     }
 
+    try {
+      const cachedDoubts = sessionStorage.getItem("cached_dash_doubts");
+      if (cachedDoubts) {
+        const doubts = JSON.parse(cachedDoubts);
+        if (Array.isArray(doubts)) {
+          state.doubts = doubts;
+          const totalEl = document.getElementById("statTotalDoubts");
+          const solvedEl = document.getElementById("statSolvedDoubts");
+          const bookmarkedEl = document.getElementById("statBookmarkedDoubts");
+          if (totalEl) totalEl.textContent = doubts.length;
+          if (solvedEl) solvedEl.textContent = doubts.filter(d => d.status === "solved" || d.status === "verified").length;
+          if (bookmarkedEl) bookmarkedEl.textContent = doubts.filter(d => d.bookmarked).length;
+          renderDoubtsList("dashboardDoubtsList", doubts.slice(0, 5));
+        }
+      }
+      const cachedRecs = sessionStorage.getItem("cached_dash_recs");
+      if (cachedRecs) {
+        const recData = JSON.parse(cachedRecs);
+        if (recData && recData.recommendations) {
+          renderDashboardRecommendations(recData.recommendations || []);
+        }
+      }
+    } catch (e) { }
+
     const doubtsPromise = fetch(`/api/doubts?user_id=${state.user.id}&role=${state.user.role}`)
       .then(r => r.json())
       .then(doubts => {
         if (Array.isArray(doubts)) {
           state.doubts = doubts;
+          sessionStorage.setItem("cached_dash_doubts", JSON.stringify(doubts));
           const totalEl = document.getElementById("statTotalDoubts");
           const solvedEl = document.getElementById("statSolvedDoubts");
           const bookmarkedEl = document.getElementById("statBookmarkedDoubts");
@@ -37,6 +62,7 @@ async function loadDashboardData() {
       .then(r => r.json())
       .then(recData => {
         if (recData && recData.recommendations) {
+          sessionStorage.setItem("cached_dash_recs", JSON.stringify(recData));
           renderDashboardRecommendations(recData.recommendations || []);
         }
       })

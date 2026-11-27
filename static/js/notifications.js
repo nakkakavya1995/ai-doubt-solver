@@ -268,9 +268,16 @@ function initNotificationStream() {
 
 function startNotificationPolling() {
   loadNotifications();
-  initNotificationStream();
-  setInterval(loadNotifications, 2000);
   updateDesktopNotifUI();
+  setInterval(loadNotifications, 6000);
+
+  if (document.readyState === "complete") {
+    setTimeout(initNotificationStream, 1500);
+  } else {
+    window.addEventListener("load", () => {
+      setTimeout(initNotificationStream, 1500);
+    }, { once: true });
+  }
 
   if ("Notification" in window && Notification.permission === "default") {
     function handleInitialPermissionGesture() {
