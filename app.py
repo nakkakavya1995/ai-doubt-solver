@@ -1,4 +1,4 @@
-import os, threading, time, urllib.request
+import os
 from flask import Flask, request, Response
 from flask_cors import CORS
 from db import init_db
@@ -37,21 +37,6 @@ def favicon():
     resp = Response(svg_icon, mimetype="image/svg+xml")
     resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
     return resp
-
-def _keep_awake():
-    time.sleep(30)
-    target_url = os.getenv("RENDER_EXTERNAL_URL", "https://ai-doubt-solver-lesr.onrender.com")
-    while True:
-        try:
-            req = urllib.request.Request(f"{target_url}/api/subjects", headers={"User-Agent": "KeepAlive/1.0"})
-            with urllib.request.urlopen(req, timeout=10) as r:
-                r.read()
-        except Exception:
-            pass
-        time.sleep(600)
-
-_t = threading.Thread(target=_keep_awake, daemon=True)
-_t.start()
 
 @app.after_request
 def set_security_headers(response):
