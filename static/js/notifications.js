@@ -174,15 +174,20 @@ function updateDesktopNotifUI() {
 }
 
 function dispatchDesktopNotification(title, message, id, link) {
-  if ("Notification" in window && Notification.permission === "granted") {
+  playNotificationChime();
+  if (!("Notification" in window)) return;
+  if (Notification.permission === "granted") {
     try {
-      const notif = new Notification(title, {
-        body: message,
+      const notif = new Notification(title || "AI Doubt Solver Alert", {
+        body: message || "You have a new real-time learning notification.",
         icon: "/static/favicon.ico",
-        tag: id || String(Date.now())
+        badge: "/static/favicon.ico",
+        tag: id || ("notif-" + Date.now()),
+        renotify: true,
+        silent: false
       });
       notif.onclick = function () {
-        window.focus();
+        try { window.focus(); } catch (e) { }
         if (id) {
           fetch(`/api/notifications/${id}/read`, { method: "POST" }).catch(() => { });
         }
@@ -193,9 +198,20 @@ function dispatchDesktopNotification(title, message, id, link) {
             window.location.href = `/history?id=${link}`;
           }
         }
+        try { notif.close(); } catch (e) { }
       };
     } catch (e) {
-      console.error(e);
+      try {
+        if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+          navigator.serviceWorker.ready.then(reg => {
+            reg.showNotification(title || "AI Doubt Solver Alert", {
+              body: message,
+              icon: "/static/favicon.ico",
+              tag: id || ("notif-" + Date.now())
+            });
+          });
+        }
+      } catch (swErr) { }
     }
   }
 }
@@ -218,13 +234,11 @@ async function testDesktopNotification() {
       })
     });
     loadNotifications();
-  } catch (e) {
-    console.error(e);
-  }
+  } catch (e) { }
 }
 
 function initNotificationStream() {
-  if (!window.EventSource || !state.user) return;
+  if (!window.EventSource || !state.user || !state.user.id) return;
   if (notifEventSource) {
     try { notifEventSource.close(); } catch (e) { }
   }
@@ -246,7 +260,7 @@ function initNotificationStream() {
       if (notifEventSource) {
         try { notifEventSource.close(); } catch (e) { }
         notifEventSource = null;
-        setTimeout(initNotificationStream, 4000);
+        setTimeout(initNotificationStream, 2000);
       }
     };
   } catch (err) { }
@@ -255,8 +269,23 @@ function initNotificationStream() {
 function startNotificationPolling() {
   loadNotifications();
   initNotificationStream();
-  setInterval(loadNotifications, 3000);
-  requestDesktopNotificationPermission(false);
+  setInterval(loadNotifications, 2000);
+  updateDesktopNotifUI();
+
+  if ("Notification" in window && Notification.permission === "default") {
+    function handleInitialPermissionGesture() {
+      if (Notification.permission === "default") {
+        Notification.requestPermission().then(p => {
+          updateDesktopNotifUI();
+          if (p === "granted") {
+            dispatchDesktopNotification("AI Doubt Solver", "Real-time desktop alerts active! You will receive instant notifications for answers and reviews.", "perm-welcome", "/");
+          }
+        }).catch(() => {});
+      }
+      document.removeEventListener("click", handleInitialPermissionGesture);
+    }
+    document.addEventListener("click", handleInitialPermissionGesture, { once: true });
+  }
 }
 
 async function loadNotifications() {

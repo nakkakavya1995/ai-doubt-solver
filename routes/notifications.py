@@ -39,23 +39,27 @@ def stream_notifications():
     query = get_notif_query(user_id, role)
 
     def event_generator():
-        yield "retry: 2000\n\n"
+        yield "retry: 1500\n\n"
         start_time = datetime.utcnow().isoformat() + "Z"
         seen_ids = set()
-        for doc in notifications_col.find(query).sort("timestamp", -1).limit(5):
-            nid = doc.get("id")
-            if nid:
-                seen_ids.add(nid)
-                if not doc.get("read", False):
-                    yield f"event: notification\ndata: {json.dumps(clean_doc(doc))}\n\n"
+        try:
+            for doc in notifications_col.find(query).sort("timestamp", -1).limit(5):
+                nid = doc.get("id")
+                if nid:
+                    seen_ids.add(nid)
+                    if not doc.get("read", False):
+                        yield f"event: notification\ndata: {json.dumps(clean_doc(doc))}\n\n"
+        except Exception:
+            pass
 
-        for _ in range(3):
+        check_time = start_time
+        for _ in range(25):
             time.sleep(1.0)
             try:
-                recent = list(notifications_col.find({
-                    **query,
-                    "timestamp": {"$gte": start_time}
-                }).sort("timestamp", -1).limit(5))
+                search_query = {**query}
+                if check_time:
+                    search_query["timestamp"] = {"$gte": check_time}
+                recent = list(notifications_col.find(search_query).sort("timestamp", -1).limit(10))
                 for doc in recent:
                     nid = doc.get("id")
                     if nid and nid not in seen_ids:
@@ -66,7 +70,7 @@ def stream_notifications():
             yield ": ping\n\n"
 
     resp = Response(event_generator(), mimetype="text/event-stream")
-    resp.headers["Cache-Control"] = "no-cache"
+    resp.headers["Cache-Control"] = "no-cache, no-transform"
     resp.headers["X-Accel-Buffering"] = "no"
     resp.headers["Connection"] = "keep-alive"
     return resp
